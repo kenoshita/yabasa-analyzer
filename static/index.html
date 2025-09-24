@@ -1,1 +1,27 @@
-<h1>ok</h1>
+<!doctype html><meta charset='utf-8'>
+<h1>🚨 求人票ヤバさ診断（SAFE版）</h1>
+<label>セクター</label>
+<select id="sector"><option value="">未選択</option><option value="ses">SES</option><option value="recruiting">人材</option><option value="ad">広告</option><option value="saas">SaaS</option><option value="retail">小売</option></select>
+<br><label>求人票URL</label><input id="url" style="width:100%">
+<p style="text-align:center">— または —</p>
+<label>本文</label><textarea id="text" rows="8" style="width:100%"></textarea>
+<button id="go">診断する</button>
+<div id="out" style="margin-top:16px"></div>
+<script>
+async function go(){
+  const url=document.getElementById('url').value.trim();
+  const text=document.getElementById('text').value.trim();
+  const sector=document.getElementById('sector').value;
+  const out=document.getElementById('out'); out.textContent='診断中…';
+  try{
+    const r=await fetch('/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url||null,text:text||null,sector:sector||null})});
+    if(!r.ok){const e=await r.json().catch(()=>({})); throw new Error(e.detail||('HTTP '+r.status));}
+    const d=await r.json();
+    const img=d.chart_png_base64?`<img src="data:image/png;base64,${d.chart_png_base64}" style="max-width:100%">`:'';
+    const cats=Object.entries(d.category_scores).map(([k,v])=>`<li>${k}：<b>${v}</b></li>`).join('');
+    const reasons=(d.top_reasons||[]).map(r=>`<li>[${r.category}] ${r.reason} <span style='background:#eee;color:#111;border-radius:999px;padding:2px 6px'>重み ${r.weight}</span></li>`).join('');
+    out.innerHTML=`<p><b>総合スコア:</b> ${d.total}　<b>判定:</b> ${d.label}</p>${img}<h3>カテゴリ別</h3><ul>${cats}</ul><h3>リスク要因</h3><ul>${reasons||'<li>特になし</li>'}</ul>`;
+  }catch(e){ out.innerHTML=`<span style="color:#f88">エラー: ${e.message}</span>`; }
+}
+document.getElementById('go').addEventListener('click', go);
+</script>
