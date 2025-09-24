@@ -1,7 +1,8 @@
+
 import os, io, base64, math, matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg')  # headless backend for server
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,16 +19,14 @@ from metrics import record as metrics_record, summary as metrics_summary
 
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
 
-app = FastAPI(title='求人票ヤバさ診断API（SAFE）', version='1.3.1')
+app = FastAPI(title='求人票ヤバさ診断API（SAFE）', version='1.3.4')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
 
-# SAFE static mounts (mount at /ui to avoid intercepting API paths)
-from fastapi.responses import FileResponse
-
+# ---------- Static handling (405対策) ----------
 def _has_static():
     return os.path.isdir('static') and os.path.isfile(os.path.join('static','index.html'))
 
@@ -40,14 +39,14 @@ def root_page():
     <p>static/index.html を配置して再デプロイしてください。</p>
     </body></html>""", status_code=200)
 
+# /ui に静的をマウント（/analyze への POST を邪魔しない）
+if os.path.isdir('static'):
+    app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
 if os.path.isdir('landing'):
     app.mount('/landing', StaticFiles(directory='landing', html=True), name='landing')
 
-# Optional: also expose the static folder under /ui/ path
-if os.path.isdir('static'):
-    app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
-
-class AnalyzeIn(BaseModel):(BaseModel):
+# ---------- API ----------
+class AnalyzeIn(BaseModel):
     url: str | None = None
     text: str | None = None
     sector: str | None = None
@@ -65,7 +64,8 @@ def _radar_png64(scores: dict) -> str:
 
 @app.get('/healthz')
 @limiter.limit('10/second')
-def healthz(request: Request): return {'ok': True}
+def healthz(request: Request): 
+    return {'ok': True}
 
 class TrackIn(BaseModel):
     path: str
@@ -79,7 +79,8 @@ def metrics_track(request: Request, inp: TrackIn):
     return {'ok': True}
 
 @app.get('/metrics/summary')
-def metrics_summary_api(): return metrics_summary()
+def metrics_summary_api(): 
+    return metrics_summary()
 
 @app.get('/metrics/dashboard', response_class=HTMLResponse)
 def metrics_dashboard():
@@ -96,9 +97,11 @@ def analyze(request: Request, inp: AnalyzeIn):
     body=(inp.text or '').strip(); src='text'
     if not body and inp.url:
         got=fetch_text_from_url(inp.url)
-        if not got: raise HTTPException(status_code=400, detail='URLの取得に失敗。本文貼り付けでお試しください。')
+        if not got: 
+            raise HTTPException(status_code=400, detail='URLの取得に失敗。本文貼り付けでお試しください。')
         body=got; src='url'
-    if not body: raise HTTPException(status_code=400, detail='入力が空です。url か text のどちらかを指定してください。')
+    if not body: 
+        raise HTTPException(status_code=400, detail='入力が空です。url か text のどちらかを指定してください。')
     cat_scores, cat_hits, cat_safe_hits, total = score_text(body, sector=inp.sector)
     label=label_total(total); png64=_radar_png64(cat_scores)
     reasons=[]

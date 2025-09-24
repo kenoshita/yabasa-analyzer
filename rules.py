@@ -1,7 +1,9 @@
+
 from bs4 import BeautifulSoup
 import requests, re
 
 MAX_PER_CATEGORY = 5
+
 RULES_BASE = {
   "仕事内容・募集条件":[
     {"pattern": r"やりがい|夢を実現|情熱|根性", "weight": 1, "reason": "抽象語で仕事内容が曖昧"},
@@ -34,11 +36,13 @@ RULES_BASE = {
     {"pattern": r"(社会保険|厚生年金|雇用保険|労災|有給|産休|育休).*(未記載|不明|記載なし)", "weight": 3, "reason": "法定福利の不備（最重大リスク）"},
   ],
 }
+
 SAFE_GUARDS = {
   "給与・待遇":[{"pattern": r"基本給\s*[\d,]+\s*円|固定給\s*[\d,]+\s*円", "negative_weight": 1, "note":"基本給が明記"}],
   "勤務時間・休日":[{"pattern": r"残業代.*?(全額|法令どおり|1分単位|別途支給)", "negative_weight": 2, "note":"残業代の適正支給を明記"}],
   "社風・福利厚生":[{"pattern": r"社会保険.*?完備|各種社会保険完備", "negative_weight": 2, "note":"法定福利を明記"}],
 }
+
 THRESHOLDS=[(0,4,"低（比較的安全）"),(5,9,"中（注意が必要）"),(10,999,"高（ブラックの可能性大）")]
 
 def fetch_text_from_url(url:str)->str:
