@@ -1,6 +1,6 @@
-fastapi
-uvicorn[standard]
-requests
-beautifulsoup4
-matplotlib
-slowapi
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+requests==2.32.3
+beautifulsoup4==4.12.3
+matplotlib==3.8.4
+slowapi==0.1.9

@@ -1,4 +1,5 @@
 import os, io, base64, math, matplotlib
+matplotlib.use('Agg')
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +18,7 @@ from metrics import record as metrics_record, summary as metrics_summary
 
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
 
-app = FastAPI(title='求人票ヤバさ診断API（SAFE）', version='1.3.0')
+app = FastAPI(title='求人票ヤバさ診断API（SAFE）', version='1.3.1')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
@@ -45,7 +46,6 @@ class AnalyzeIn(BaseModel):
     sector: str | None = None
 
 def _radar_png64(scores: dict) -> str:
-    import matplotlib.pyplot as plt
     cats=list(scores.keys()); vals=[scores[c] for c in cats]
     N=len(cats); ang=[n/float(N)*2*math.pi for n in range(N)]
     vals+=vals[:1]; ang+=ang[:1]
@@ -85,7 +85,7 @@ def metrics_dashboard():
 
 @app.post('/analyze')
 @limiter.limit('10/second')
-def analyze(inp: AnalyzeIn):
+def analyze(request: Request, inp: AnalyzeIn):
     body=(inp.text or '').strip(); src='text'
     if not body and inp.url:
         got=fetch_text_from_url(inp.url)
