@@ -25,22 +25,29 @@ app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
 
-# SAFE static mounts
-if os.path.isdir('static'):
-    app.mount('/', StaticFiles(directory='static', html=True), name='static_root')
-else:
-    @app.get('/', response_class=HTMLResponse)
-    def _fallback_root():
-        return """<html><meta charset='utf-8'><body>
-        <h1>セットアップ中</h1>
-        <p>static/ フォルダが見つからないため、簡易ページを表示しています。</p>
-        <p>GitHub に <code>static/index.html</code> を置いて再デプロイしてください。</p>
-        </body></html>"""
+# SAFE static mounts (mount at /ui to avoid intercepting API paths)
+from fastapi.responses import FileResponse
+
+def _has_static():
+    return os.path.isdir('static') and os.path.isfile(os.path.join('static','index.html'))
+
+@app.get('/', response_class=HTMLResponse)
+def root_page():
+    if _has_static():
+        return FileResponse(os.path.join('static','index.html'))
+    return HTMLResponse("""<html><meta charset='utf-8'><body>
+    <h1>セットアップ中</h1>
+    <p>static/index.html を配置して再デプロイしてください。</p>
+    </body></html>""", status_code=200)
 
 if os.path.isdir('landing'):
     app.mount('/landing', StaticFiles(directory='landing', html=True), name='landing')
 
-class AnalyzeIn(BaseModel):
+# Optional: also expose the static folder under /ui/ path
+if os.path.isdir('static'):
+    app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
+
+class AnalyzeIn(BaseModel):(BaseModel):
     url: str | None = None
     text: str | None = None
     sector: str | None = None
