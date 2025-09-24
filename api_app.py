@@ -1,6 +1,6 @@
 
 import os, io, base64, math, matplotlib
-matplotlib.use('Agg')  # headless backend for server
+matplotlib.use('Agg')
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,19 +14,17 @@ from slowapi.middleware import SlowAPIMiddleware
 
 matplotlib.rcParams['font.family'] = ['Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','MS Gothic','sans-serif']
 
-from rules import score_text, label_total, fetch_text_from_url, MAX_PER_CATEGORY
-from metrics import record as metrics_record, summary as metrics_summary
+from rules import score_text, label_total, fetch_text_from_url, MAX_PER_CATEGORY, preprocess_text
 
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
 
-app = FastAPI(title='求人票ヤバさ診断API（SAFE）', version='1.3.4')
+app = FastAPI(title='求人票ヤバさ診断API v4', version='1.4.0')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
 
-# ---------- Static handling (405対策) ----------
 def _has_static():
     return os.path.isdir('static') and os.path.isfile(os.path.join('static','index.html'))
 
@@ -39,17 +37,16 @@ def root_page():
     <p>static/index.html を配置して再デプロイしてください。</p>
     </body></html>""", status_code=200)
 
-# /ui に静的をマウント（/analyze への POST を邪魔しない）
 if os.path.isdir('static'):
     app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
 if os.path.isdir('landing'):
     app.mount('/landing', StaticFiles(directory='landing', html=True), name='landing')
 
-# ---------- API ----------
 class AnalyzeIn(BaseModel):
     url: str | None = None
     text: str | None = None
     sector: str | None = None
+    mode: str | None = None
 
 def _radar_png64(scores: dict) -> str:
     cats=list(scores.keys()); vals=[scores[c] for c in cats]
@@ -64,52 +61,50 @@ def _radar_png64(scores: dict) -> str:
 
 @app.get('/healthz')
 @limiter.limit('10/second')
-def healthz(request: Request): 
+def healthz(request: Request):
     return {'ok': True}
-
-class TrackIn(BaseModel):
-    path: str
-    ref: str | None = None
-
-@app.post('/metrics/track')
-@limiter.limit('20/second')
-def metrics_track(request: Request, inp: TrackIn):
-    client_ip = request.client.host if request.client else ''
-    metrics_record(page_path=inp.path, ip=client_ip, user_agent=request.headers.get('user-agent',''), ref=(inp.ref or ''))
-    return {'ok': True}
-
-@app.get('/metrics/summary')
-def metrics_summary_api(): 
-    return metrics_summary()
-
-@app.get('/metrics/dashboard', response_class=HTMLResponse)
-def metrics_dashboard():
-    s=metrics_summary()
-    rows_day=''.join(f"<tr><td>{d}</td><td>{v['views']}</td><td>{v['unique_ips']}</td></tr>" for d,v in sorted(s['by_day'].items()))
-    rows_path=''.join(f"<tr><td>{p}</td><td>{v['views']}</td></tr>" for p,v in sorted(s['by_path'].items()))
-    return HTMLResponse(f"""<html><meta charset='utf-8'><body style='font-family:sans-serif'>
-    <h1>Metrics</h1><h2>By Day</h2><table border='1'><tr><th>Day</th><th>Views</th><th>Unique</th></tr>{rows_day}</table>
-    <h2>By Path</h2><table border='1'><tr><th>Path</th><th>Views</th></tr>{rows_path}</table></body></html>""")
 
 @app.post('/analyze')
 @limiter.limit('10/second')
 def analyze(request: Request, inp: AnalyzeIn):
+    mode = (inp.mode or 'standard').lower()
     body=(inp.text or '').strip(); src='text'
     if not body and inp.url:
         got=fetch_text_from_url(inp.url)
-        if not got: 
+        if not got:
             raise HTTPException(status_code=400, detail='URLの取得に失敗。本文貼り付けでお試しください。')
         body=got; src='url'
-    if not body: 
+    if not body:
         raise HTTPException(status_code=400, detail='入力が空です。url か text のどちらかを指定してください。')
-    cat_scores, cat_hits, cat_safe_hits, total = score_text(body, sector=inp.sector)
-    label=label_total(total); png64=_radar_png64(cat_scores)
+    cat_scores, cat_hits, cat_safe_hits, cat_evidence, total = score_text(body, sector=inp.sector)
     reasons=[]
-    for cat,hits in cat_hits.items():
-        for h in hits: reasons.append({'category':cat,'reason':h['reason'],'weight':h['weight']})
+    for cat, hits in cat_hits.items():
+        for h in hits:
+            reasons.append({'category':cat,'reason':h['reason'],'weight':h['weight']})
     reasons.sort(key=lambda x:(-x['weight'], x['category']))
-    uniq=[]; seen=set()
-    for r in reasons:
-        k=(r['category'], r['reason'])
-        if k not in seen: seen.add(k); uniq.append(r)
-    return {'source':src,'sector':inp.sector,'total':total,'label':label,'category_scores':cat_scores,'top_reasons':uniq[:8],'chart_png_base64':png64}
+    label = label_total(total)
+    max_cat = max(cat_scores.values()) if cat_scores else 0
+    safe_count = sum(len(v) for v in cat_safe_hits.values())
+    if mode == 'strict':
+        if max_cat >= 4 or total >= 12:
+            label = '高（ブラックの可能性大）'
+    elif mode == 'lenient':
+        if label.startswith('高') and safe_count >= 2 and total <= 14:
+            label = '中（注意が必要）'
+    png64=_radar_png64(cat_scores)
+    ev_list=[]
+    for cat, snippets in cat_evidence.items():
+        for sn in snippets:
+            ev_list.append({'category':cat, 'snippet':sn})
+    ev_list = ev_list[:10]
+    return {
+        'source':src,
+        'sector':inp.sector,
+        'mode': mode,
+        'total':total,
+        'label':label,
+        'category_scores':cat_scores,
+        'top_reasons':reasons[:10],
+        'evidence': ev_list,
+        'chart_png_base64':png64
+    }
