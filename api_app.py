@@ -18,7 +18,7 @@ from rules import score_text, label_total, fetch_text_from_url, MAX_PER_CATEGORY
 
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
 
-app = FastAPI(title='求人票ヤバさ診断API v4', version='1.4.0')
+app = FastAPI(title='求人票ヤバさ診断API v4.2', version='1.4.2')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
@@ -96,7 +96,7 @@ def analyze(request: Request, inp: AnalyzeIn):
     for cat, snippets in cat_evidence.items():
         for sn in snippets:
             ev_list.append({'category':cat, 'snippet':sn})
-    ev_list = ev_list[:10]
+    ev_list = ev_list[:12]
     return {
         'source':src,
         'sector':inp.sector,
