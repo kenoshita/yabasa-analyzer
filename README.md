@@ -1,10 +1,11 @@
-# 求人票ヤバさ診断（Complete）
+# 求人票ヤバさ診断（Final）
 
 - API: FastAPI（/analyze）
 - UI: `/ui`（`static/index.html`）
 - レート制限: `30/min`, `200/hour`
 - ログ: `logs/usage.csv`
 - メトリクス: `/metrics`（簡易 Prometheus）
+- 免責事項: UI下部に掲示
 
 ## 使い方（ローカル）
 ```bash
@@ -17,8 +18,8 @@ uvicorn api_app:app --reload
 
 ## Docker
 ```bash
-docker build -t yabasa:complete .
-docker run --rm -p 8000:8000 -e ENABLE_LOG=1 -v $(pwd)/logs:/app/logs yabasa:complete
+docker build -t yabasa:final .
+docker run --rm -p 8000:8000 -e ENABLE_LOG=1 -v $(pwd)/logs:/app/logs yabasa:final
 # http://localhost:8000/ui
 ```
 
@@ -33,14 +34,9 @@ docker run --rm -p 8000:8000 -e ENABLE_LOG=1 -v $(pwd)/logs:/app/logs yabasa:com
   - `measured_flags`（true=測定済 / false=測定不能）
   - `chart_png_base64`（レーダーチャートPNG）
   - `scale_legend`（スコアの見方 0〜5）
-  - `top_reasons`, `evidence`, `recommendations`
+  - `top_reasons`, `evidence`（赤マーク付き）, `recommendations`
 
-## ログ / メトリクス
-- `logs/usage.csv` に以下を追記します：
-  - `ts_iso, ip, source(text|url), total, label, mode, sector, ua`
-- `/metrics` は以下を返します：
-  - `yabasa_requests_total`, `yabasa_requests_ok`, `yabasa_requests_error`
-
-## 注意
+## 注意・免責（UIにも掲載）
 - 「測定不能」判定は、該当カテゴリにヒットが一切無い場合に表示されます。
 - 0点＝安全 ではなく **「該当する懸念が検出されなかった」** の意味です。情報不足の場合は「測定不能」になります。
+- 本診断は自動解析であり、企業の実態・法令遵守を保証するものではありません。最終判断は自己責任でお願いします。

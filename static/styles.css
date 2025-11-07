@@ -27,6 +27,22 @@ table{ width:100%; border-collapse: collapse; margin-top:8px; }
 th, td{ border-bottom:1px solid #1f2733; padding:8px; text-align:left; }
 .na td{ color:#8b93a2; }
 .evi{ background:#0e1520; border:1px solid #1f2733; border-radius:10px; padding:8px; margin:6px 0; }
+.evi mark{ background:transparent; color:var(--bad); font-weight:800; }
 
+.notice-box {
+  background:#1b2535;
+  border-left:4px solid #ffb020;
+  padding:10px 14px;
+  border-radius:8px;
+  margin:20px 0;
+  color:#e9eef5;
+}
+.disclaimer {
+  margin-top:20px;
+  font-size:12px;
+  color:#8b93a2;
+  line-height:1.5;
+}
 footer{ text-align:center; color:var(--muted); padding:20px 0 40px; }
-footer a{ color:#8fc7ff; }
+footer a{ color:#8fc7ff; text-decoration: none; padding:6px 10px; background:#0e1520; border:1px solid #1f2733; border-radius:8px; }
+footer a:hover{ filter: brightness(1.1); }

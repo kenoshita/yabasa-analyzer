@@ -18,7 +18,7 @@ from rules import score_text, label_total, fetch_text_from_url, MAX_PER_CATEGORY
 
 # ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
-app = FastAPI(title='求人票ヤバさ診断API v5.0 "Complete"', version='1.5.0')
+app = FastAPI(title='求人票ヤバさ診断API v5.0 "Final"', version='1.5.1')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 

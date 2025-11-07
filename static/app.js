@@ -60,7 +60,8 @@ function renderResult(d) {
   (d.evidence || []).forEach(e => {
     const div = document.createElement("div");
     div.className = "evi";
-    div.innerHTML = `<b>${e.category}</b>：${escapeHtml(e.snippet)}`;
+    // e.snippet は HTML（赤マーク含む）として表示
+    div.innerHTML = `<b>${e.category}</b>：${e.snippet}`;
     ev.appendChild(div);
   });
 
@@ -79,12 +80,6 @@ function renderResult(d) {
     li.textContent = `${r.category}: ${r.reason}（重み${r.weight}）`;
     reasons.appendChild(li);
   });
-}
-
-function escapeHtml(str){
-  return str.replace(/[&<>"']/g, s => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[s]));
 }
 
 document.getElementById("analyzeBtn").addEventListener("click", analyze);

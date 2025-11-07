@@ -110,6 +110,9 @@ def _collect_evidence(text: str, pattern: str, window: int = 40) -> list[str]:
   for m in re.finditer(pattern, text, flags=re.IGNORECASE|re.DOTALL):
     s = max(0, m.start()-window); e = min(len(text), m.end()+window)
     snippet = text[s:e].replace("\n"," ")
+    matched = text[m.start():m.end()]
+    # 赤文字＆太字でハイライト
+    snippet = snippet.replace(matched, f"<mark style='color:#ff5d5d; font-weight:bold;'>{matched}</mark>")
     out.append(snippet)
     if len(out) >= 3: break
   return out
