@@ -214,4 +214,3 @@ def label_total(total: int) -> str:
     if lo <= total <= hi:
       return label
   return "不明"
-
