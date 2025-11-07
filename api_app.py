@@ -155,3 +155,4 @@ def analyze(request: Request, inp: AnalyzeIn):
         'improvements': improvements[:20],
         'chart_png_base64':png64
     }
+
