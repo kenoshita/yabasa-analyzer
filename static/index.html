@@ -1,1 +1,77 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>求人票ヤバさ診断 v4.2</title><style>:root{--bg:#0b1220;--card:#0f172a;--line:#1f2937;--text:#e5e7eb;--muted:#9ca3af;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--chip:#111827}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}header{position:sticky;top:0;background:rgba(11,18,32,.8);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:12px 16px}.container{max-width:1100px;margin:0 auto;padding:20px}h1{margin:0;font-size:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:900px){.grid{grid-template-columns:1fr}}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}label{display:block;margin:10px 0 4px}input[type="text"],textarea,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1220;color:var(--text)}button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#111827;color:var(--text);cursor:pointer}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.muted{color:var(--muted);font-size:12px}.scorebar{height:10px;border-radius:8px;background:#111827;overflow:hidden;border:1px solid var(--line)}.scorebar>div{height:100%;width:0%}.chip{display:inline-block;background:var(--chip);border:1px solid var(--line);padding:2px 8px;border-radius:999px;font-size:12px;margin-right:6px}.pill{display:inline-block;border-radius:999px;padding:2px 8px;border:1px solid var(--line);font-size:12px}.tag-ok{background:rgba(16,185,129,.15);color:#34d399}.tag-warn{background:rgba(245,158,11,.15);color:#fbbf24}.tag-bad{background:rgba(239,68,68,.15);color:#f87171}.evidence{background:#0b1220;border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:13px;margin:6px 0}img{max-width:100%;height:auto}</style></head><body><header><div class="container"><h1>🚨 求人票ヤバさ診断 v4.2</h1></div></header><main class="container"><div class="grid"><section class="card"><div class="row"><label class="pill">モード</label><label class="chip"><input type="radio" name="mode" value="standard" checked> 標準</label><label class="chip"><input type="radio" name="mode" value="strict"> 厳格</label><label class="chip"><input type="radio" name="mode" value="lenient"> 甘め</label></div><label>セクター（任意）</label><select id="sector"><option value="">未選択</option><option value="ses">SES/IT派遣</option><option value="recruiting">人材/営業</option><option value="ad">広告/メディア</option><option value="saas">SaaS/スタートアップ</option><option value="retail">小売/飲食</option></select><label style="margin-top:8px;">求人票URL（任意）</label><input id="url" type="text" placeholder="https://example.com/job-posting"><p style="text-align:center;margin:8px 0">— または —</p><label>本文（推奨）</label><textarea id="text" rows="12" placeholder="求人票の本文を貼り付け"></textarea><div class="row" style="margin-top:8px"><button id="analyzeBtn">診断する</button><span id="status" class="muted"></span></div><p class="muted">※ 動的サイトや会員制サイトはURL取得に失敗することがあります。本文貼り付けを推奨します。</p></section><section class="card"><strong>結果</strong><div class="scorebar" style="margin:8px 0 4px"><div id="scorebar"></div></div><div class="muted" id="summary">入力を待機中…</div><div id="chart" style="margin-top:12px"></div><div id="cats" style="margin-top:8px"></div><div id="reasons" style="margin-top:12px"></div><div id="evidence" style="margin-top:12px"></div></section></div><section class="card" style="margin-top:16px"><h3>免責事項</h3><p class="muted">本サービスは求人票のテキストをもとにヒューリスティックに「注意点」を表示する参考ツールです。法令遵守・雇用条件の適合性を保証するものではありません。採用判断や転職判断は、契約書・面談・労務相談・各種公式情報などを総合的に確認した上で行ってください。本サービスの利用により生じたいかなる損害についても、運営者は責任を負いません。</p></section></main><script>function byId(id){return document.getElementById(id)}function getMode(){return[...document.querySelectorAll('input[name=mode]')].find(r=>r.checked).value}function colorFor(total){if(total>=13)return'var(--bad)';if(total>=7)return'var(--warn)';return'var(--ok)'}async function analyze(){const url=byId('url').value.trim();const text=byId('text').value.trim();const sector=byId('sector').value;const mode=getMode();byId('status').textContent='診断中…';try{const res=await fetch('/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url||null,text:text||null,sector:sector||null,mode:mode})});if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||('HTTP '+res.status))}const d=await res.json();byId('summary').innerHTML=`<b>総合スコア:</b> ${d.total}　<b>判定:</b> ${d.label}　<span class="muted">mode=${mode}</span>`;const bar=byId('scorebar');bar.style.width=Math.min(100,(d.total/20)*100)+'%';bar.style.background=colorFor(d.total);const img=d.chart_png_base64?`<img src="data:image/png;base64,${d.chart_png_base64}" alt="radar">`:'';byId('chart').innerHTML=img;const cats=Object.entries(d.category_scores).map(([k,v])=>{const tagClass=v>=4?'tag-bad':(v>=2?'tag-warn':'tag-ok');return`<div class="row"><span class="pill ${tagClass}">${k}</span><div class="chip">スコア ${v}</div></div>`}).join('');byId('cats').innerHTML=cats;const reasons=(d.top_reasons||[]).map(r=>`<li>[${r.category}] ${r.reason} <span class="chip">重み ${r.weight}</span></li>`).join('');byId('reasons').innerHTML=`<h4>リスク要因</h4><ul>${reasons||'<li>特になし</li>'}</ul>`;const ev=(d.evidence||[]).map(e=>`<div class="evidence">[${e.category}] … ${e.snippet} …</div>`).join('');byId('evidence').innerHTML=ev?`<h4>根拠（本文抜粋）</h4>${ev}`:'';byId('status').textContent=''}catch(e){byId('status').textContent='エラー: '+e.message}}byId('analyzeBtn').addEventListener('click',analyze);</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>求人票ヤバさ診断</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+  <header>
+    <h1>求人票ヤバさ診断</h1>
+    <div class="version">API v5.0</div>
+  </header>
+
+  <main>
+    <section class="input-card">
+      <label>URL または 本文（どちらか）</label>
+      <input id="url" type="url" placeholder="https://example.com/job">
+      <textarea id="text" rows="8" placeholder="ここに求人本文を貼り付け"></textarea>
+
+      <div class="row">
+        <label>モード</label>
+        <select id="mode">
+          <option value="standard">標準</option>
+          <option value="strict">厳しめ</option>
+          <option value="lenient">ゆるめ</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <button id="analyzeBtn">診断する</button>
+        <span id="status"></span>
+      </div>
+      <p class="legend">
+        スコアは各カテゴリ 0〜5（0=問題なし / 5=大いに問題あり）。
+        情報不足で評価できない項目は <b>測定不能</b> と表示します。
+      </p>
+    </section>
+
+    <section id="result" class="hidden">
+      <div class="score-banner">
+        <div class="total-score" id="totalScore">--</div>
+        <div class="total-label" id="totalLabel">-</div>
+      </div>
+
+      <div class="chart-block">
+        <img id="radar" alt="Radar Chart" />
+        <div class="scale">
+          <div class="scale-title">スコアの見方</div>
+          <ul id="scaleList"></ul>
+        </div>
+      </div>
+
+      <h3>カテゴリ別スコア</h3>
+      <table id="scoreTable">
+        <thead><tr><th>カテゴリ</th><th>スコア</th><th>測定</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h3>根拠（抽出スニペット）</h3>
+      <div id="evidence"></div>
+
+      <h3>改善提案</h3>
+      <ul id="recommendations"></ul>
+
+      <h3>上位理由</h3>
+      <ul id="reasons"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <a href="/metrics" target="_blank">メトリクス</a> ｜ <a href="/healthz" target="_blank">ヘルスチェック</a>
+  </footer>
+
+  <script src="/ui/app.js"></script>
+</body>
+</html>
