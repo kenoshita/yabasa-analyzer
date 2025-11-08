@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>管理ダッシュボード</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main style="max-width:1000px;margin:20px auto;padding:0 16px;">
+    <h2>管理ダッシュボード（サマリー）</h2>
+
+    <section class="input-card" id="loginBox">
+      <label>管理パスワード</label>
+      <input id="pwd" type="password" placeholder="••••••••" style="max-width:320px;">
+      <div class="row">
+        <button id="loginBtn">ログイン</button>
+        <span id="loginStatus"></span>
+      </div>
+      <p class="legend">※ 環境変数 <code>ADMIN_PASS</code> に設定した値</p>
+    </section>
+
+    <section id="dash" class="hidden">
+      <div class="score-banner">
+        <div class="total-score" id="totalNum">--</div>
+        <div class="total-label">累計リクエスト</div>
+      </div>
+
+      <div class="chart-block">
+        <div style="flex:1 1 360px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:12px;">
+          <h3 style="margin:4px 0 8px;">直近7日の利用数</h3>
+          <canvas id="dailyChart"></canvas>
+        </div>
+        <div style="flex:1 1 360px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:12px;">
+          <h3 style="margin:4px 0 8px;">判定内訳</h3>
+          <canvas id="labelPie"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/ui/admin.js"></script>
+</body>
+</html>
