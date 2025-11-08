@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>管理ダッシュボード</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main style="max-width:960px;margin:20px auto;">
+    <h2>管理ダッシュボード</h2>
+
+    <section id="loginBox" class="input-card">
+      <p>管理パスワードを入力してください</p>
+      <input id="adminPwd" type="password" placeholder="●●●●●" style="width:240px">
+      <button id="loginBtn">ログイン</button>
+      <div id="loginMsg" style="color:#ffb020;margin-top:8px"></div>
+      <p class="legend" style="margin-top:10px">
+        ※ パスワードは Render の <b>Environment Variables</b> に設定する <code>ADMIN_PASS</code> です。
+      </p>
+    </section>
+
+    <section id="dash" class="hidden">
+      <div class="score-banner">
+        <div>
+          <div class="total-label">本日</div>
+          <div class="total-score" id="todayCount">--</div>
+        </div>
+        <div>
+          <div class="total-label">累計</div>
+          <div class="total-score" id="totalCount">--</div>
+        </div>
+        <div>
+          <div class="total-label">成功 / 失敗</div>
+          <div class="total-score" id="okErr">--</div>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <div style="flex:1 1 320px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:10px">
+          <h3 style="margin:6px 0 10px">日別利用数（直近30日）</h3>
+          <canvas id="dailyChart"></canvas>
+        </div>
+        <div style="flex:1 1 320px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:10px">
+          <h3 style="margin:6px 0 10px">判定比率（低/中/高）</h3>
+          <canvas id="labelPie"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/ui/admin.js"></script>
+</body>
+</html>
