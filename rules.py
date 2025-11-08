@@ -3,7 +3,7 @@ import requests, re, unicodedata
 
 MAX_PER_CATEGORY = 5
 
-# UIと一致させる表示名
+# 表示名のマッピング（UIと一致させる）
 DISPLAY_NAME_MAP = {
   "勤務時間・休日":"勤務時間・休日",
   "給与・待遇":"給与・待遇",
@@ -18,6 +18,7 @@ def preprocess_text(raw: str) -> str:
     if not raw:
         return ""
     txt = unicodedata.normalize("NFKC", raw)
+    # よくあるノイズを除去
     noise_keys = ["最近見た求人","おすすめ求人","会員登録","キーワードで探す","スカウト","応募履歴","関連の求人","閲覧履歴","人気のキーワード","この求人を保存"]
     for k in noise_keys:
         txt = txt.replace(k, " ")
@@ -96,11 +97,12 @@ THRESHOLDS=[(0,6,"低（比較的安全）"),(7,12,"中（注意が必要）"),(
 
 def fetch_text_from_url(url:str)->str:
   try:
-    r=requests.get(url,headers={"User-Agent":"Mozilla/5.0"},timeout=20); r.raise_for_status()
-    soup=BeautifulSoup(r.text,"html.parser")
+    r = requests.get(url, headers={"User-Agent":"Mozilla/5.0"}, timeout=20)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "html.parser")
     for t in soup(["script","style","noscript"]): t.decompose()
-    text=soup.get_text("\n")
-    text=re.sub(r"\n{2,}","\n",text)
+    text = soup.get_text("\n")
+    text = re.sub(r"\n{2,}", "\n", text)
     return preprocess_text(text)[:80000]
   except Exception:
     return ""
@@ -111,7 +113,7 @@ def _collect_evidence(text: str, pattern: str, window: int = 40) -> list[str]:
     s = max(0, m.start()-window); e = min(len(text), m.end()+window)
     snippet = text[s:e].replace("\n"," ")
     matched = text[m.start():m.end()]
-    # 赤文字＆太字でハイライト（UIでそのままHTMLとして表示）
+    # 赤文字＆太字でハイライト
     snippet = snippet.replace(matched, f"<mark style='color:#ff5d5d; font-weight:bold;'>{matched}</mark>")
     out.append(snippet)
     if len(out) >= 3: break
@@ -144,24 +146,22 @@ def score_text(text: str, sector: str | None = None):
         hits.append({"pattern": rule["pattern"], "weight": rule["weight"], "reason": rule["reason"]})
         evidence.extend(_collect_evidence(text, rule["pattern"]))
         measured = True
-
     safe_hits=[]
     for guard in SAFE_GUARDS.get(cat, []):
       if re.search(guard["pattern"], text, flags=re.IGNORECASE|re.DOTALL):
         score -= guard["negative_weight"]
         safe_hits.append(guard)
         measured = True
-
     score = max(0, min(score, MAX_PER_CATEGORY))
     cat_scores[cat]=score; cat_hits[cat]=hits; cat_safe_hits[cat]=safe_hits; cat_evidence[cat]=evidence[:3]; measured_flags[cat]=measured
 
-  # 追加ヒューリスティクス
+  # 追加ヒューリスティック
   dens = _katakana_density(text)
   if dens >= 0.18:
     cat = "求人票サイン"
     cat_scores[cat] = min(MAX_PER_CATEGORY, cat_scores.get(cat,0) + 1)
-    cat_hits.setdefault(cat, []).append({"pattern": "KATAKANA_DENSITY>=0.18", "weight": 1, "reason":"横文字が多すぎる可能性"})
-    cat_evidence.setdefault(cat, []).append(f"… カタカナ語比率 {dens:.0%} …")
+    cat_hits.setdefault(cat, []).append({"pattern": "KATAKANA_DENSITY>=0.18", "weight": 1, "reason":"見慣れない横文字の職種が多い可能性"})
+    cat_evidence.setdefault(cat, []).append(f"… カタカナ語が多い（比率{dens:.0%}） …")
     measured_flags[cat] = True
 
   ranges = _wide_salary_range(text)
