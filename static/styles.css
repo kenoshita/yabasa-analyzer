@@ -64,3 +64,22 @@ label {
   text-align: left;
   opacity: 0.75;
 }
+.project-footer {
+  text-align: center;
+  margin-top: 60px;
+  margin-bottom: 40px;
+  font-size: 0.85rem;
+  color: #9aa5b1;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.project-footer a {
+  color: #9aa5b1;
+  text-decoration: none;
+  border-bottom: 1px dotted #9aa5b1;
+}
+
+.project-footer a:hover {
+  color: #ffffff;
+}
