@@ -8,38 +8,31 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <main style="max-width:1000px;margin:20px auto;padding:0 16px;">
-    <h2>管理ダッシュボード（サマリー）</h2>
-
-    <section class="input-card" id="loginBox">
-      <label>管理パスワード</label>
-      <input id="pwd" type="password" placeholder="••••••••" style="max-width:320px;">
-      <div class="row">
-        <button id="loginBtn">ログイン</button>
-        <span id="loginStatus"></span>
-      </div>
-      <p class="legend">※ 環境変数 <code>ADMIN_PASS</code> に設定した値</p>
-    </section>
+  <main style="max-width:900px;margin:20px auto;color:#e9eef5;">
+    <h2>管理ダッシュボード</h2>
+    <div id="loginBox">
+      <p>管理パスワード</p>
+      <input id="pwd" type="password" style="padding:8px;width:220px;">
+      <button id="loginBtn">開く</button>
+      <div id="loginStatus" style="color:#9fb3c8;margin-top:6px;"></div>
+    </div>
 
     <section id="dash" class="hidden">
-      <div class="score-banner">
-        <div class="total-score" id="totalNum">--</div>
-        <div class="total-label">累計リクエスト</div>
+      <div class="input-card">
+        <div class="row" style="justify-content:space-between;">
+          <div>総実行回数：<b id="totalNum">0</b></div>
+        </div>
       </div>
 
-      <div class="chart-block">
-        <div style="flex:1 1 360px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:12px;">
-          <h3 style="margin:4px 0 8px;">直近7日の利用数</h3>
-          <canvas id="dailyChart"></canvas>
-        </div>
-        <div style="flex:1 1 360px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:12px;">
-          <h3 style="margin:4px 0 8px;">判定内訳</h3>
-          <canvas id="labelPie"></canvas>
-        </div>
+      <div class="chart-block" style="min-height:260px;">
+        <canvas id="dailyChart"></canvas>
+      </div>
+
+      <div class="chart-block" style="min-height:220px;">
+        <canvas id="labelPie"></canvas>
       </div>
     </section>
   </main>
-
   <script src="/ui/admin.js"></script>
 </body>
 </html>
