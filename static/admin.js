@@ -1,51 +1,41 @@
-async function postJSON(url, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(body || {})
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || res.statusText);
-  }
-  return res.json();
-}
+async function login() {
+  const pwd = document.getElementById('pwd').value.trim();
+  const status = document.getElementById('loginStatus');
+  status.textContent = '読込中...';
 
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const pwd = document.getElementById("adminPwd").value.trim();
-  const msg = document.getElementById("loginMsg");
-  msg.textContent = "認証中…";
   try {
-    const d = await postJSON("/admin/data", { password: pwd });
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("dash").classList.remove("hidden");
-
-    // Summary counters
-    document.getElementById("todayCount").textContent = d.today_count;
-    document.getElementById("totalCount").textContent = d.requests_total;
-    document.getElementById("okErr").textContent = `${d.requests_ok} / ${d.requests_error}`;
-
-    // Daily line
-    new Chart(document.getElementById("dailyChart"), {
-      type: "line",
-      data: {
-        labels: d.daily.labels,
-        datasets: [{ label: "利用数", data: d.daily.values }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    const res = await fetch('/admin/data', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pwd })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail:'認証エラー'}));
+      throw new Error(err.detail || '認証エラー');
+    }
+    const d = await res.json();
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('dash').classList.remove('hidden');
+    document.getElementById('totalNum').textContent = d.total_requests ?? 0;
 
-    // Label pie
-    new Chart(document.getElementById("labelPie"), {
-      type: "pie",
-      data: {
-        labels: ["低", "中", "高"],
-        datasets: [{ data: [d.labels.low, d.labels.mid, d.labels.high] }]
-      },
+    // 折れ線
+    new Chart(document.getElementById('dailyChart'), {
+      type: 'line',
+      data: { labels: d.daily.labels, datasets: [{ label: '件数', data: d.daily.values }] },
       options: { responsive: true, maintainAspectRatio: false }
     });
 
+    // 円
+    new Chart(document.getElementById('labelPie'), {
+      type: 'pie',
+      data: { labels: ['低','中','高'], datasets: [{ data: [d.by_label.low, d.by_label.mid, d.by_label.high] }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    status.textContent = '';
   } catch (e) {
-    msg.textContent = "認証に失敗しました：" + e.message;
+    status.textContent = 'エラー: ' + e.message;
   }
-});
+}
+
+document.getElementById('loginBtn').addEventListener('click', login);
