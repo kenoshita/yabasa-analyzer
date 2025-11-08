@@ -37,3 +37,6 @@ footer{ text-align:center; color:#8b93a2; padding:20px 0 40px; }
   color: #9aa5b1;
   margin-top: 4px;
 }
+label {
+  white-space: nowrap; /* ← ラベルを改行しない */
+}
