@@ -2,8 +2,8 @@ import os, io, base64, math, csv, datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
+from fastapi import FastAPI, HTTPException, Request, Depends, Body
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-# CJKフォントが無くてもエラーにしない（表示品質のみ低下）
+# CJKフォントが無くても落ちない（見た目のみ低下）
 matplotlib.rcParams['font.family'] = ['Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','MS Gothic','sans-serif']
 
 from rules import (
@@ -22,7 +22,7 @@ from rules import (
 
 # ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
-app = FastAPI(title='求人票ヤバさ診断 API (secured)', version='1.6.1')
+app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.6.1')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
@@ -34,7 +34,7 @@ REQUESTS_TOTAL = 0
 REQUESTS_OK = 0
 REQUESTS_ERROR = 0
 
-# ---- Bearer token guards (必須) ----
+# ---- Bearer token guards for /metrics & /healthz ----
 def _require_token(request: Request, env_var: str):
     expected = os.environ.get(env_var, "")
     if not expected:
@@ -61,6 +61,7 @@ def root_page():
         return FileResponse(os.path.join('static','index.html'))
     return HTMLResponse("<html><meta charset='utf-8'><body><h1>セットアップ中</h1></body></html>")
 
+# /ui で static を配信
 if os.path.isdir('static'):
     app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
 
@@ -80,8 +81,7 @@ def _radar_png64(scores: dict, measured_flags: dict) -> str:
     ang = [n/float(N)*2*math.pi for n in range(N)]
     vals += vals[:1]; ang += ang[:1]
     fig, ax = plt.subplots(figsize=(6,6), subplot_kw=dict(polar=True))
-    ax.plot(ang, vals, linewidth=2)
-    ax.fill(ang, vals, alpha=.25)
+    ax.plot(ang, vals, linewidth=2); ax.fill(ang, vals, alpha=.25)
     ax.set_xticks(ang[:-1]); ax.set_xticklabels(labels, fontsize=10)
     ax.set_yticks(range(0, MAX_PER_CATEGORY+1)); ax.set_yticklabels([str(i) for i in range(0, MAX_PER_CATEGORY+1)])
     ax.grid(True)
@@ -100,21 +100,6 @@ def _scale_legend():
             {"score":5, "meaning":"非常に高い（強いサインが繰り返し）"}
         ]
     }
-
-def _suggestions(cat_scores: dict, measured_flags: dict) -> list[dict]:
-    out = []
-    for cat, score in cat_scores.items():
-        cat_name = DISPLAY_NAME_MAP.get(cat, cat)
-        if not measured_flags.get(cat, True):
-            out.append({"category": cat_name, "suggestion":"該当情報が不足しているため評価できません。募集要項や制度の記載を追加してください。"})
-        else:
-            if score >= 4:
-                out.append({"category": cat_name, "suggestion":"強い懸念。表現の具体化、法令遵守の明記、客観的根拠（数値・実績）を提示。"})
-            elif score == 3:
-                out.append({"category": cat_name, "suggestion":"曖昧/誇張を削除し、金額・休日数・上限/下限などを明確化。"})
-            elif score == 2:
-                out.append({"category": cat_name, "suggestion":"ポジ表現に偏らず、具体条件（例：残業代全額支給、年休120日）を補強。"})
-    return out[:12]
 
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
     try:
@@ -168,14 +153,12 @@ def analyze(request: Request, inp: AnalyzeIn):
 
         cat_scores, cat_hits, cat_safe_hits, cat_evidence, total, measured_flags = score_text(body, sector=inp.sector)
 
-        # 上位理由の抽出
         reasons=[]
         for cat, hits in cat_hits.items():
             for h in hits:
                 reasons.append({'category':DISPLAY_NAME_MAP.get(cat, cat),'reason':h['reason'],'weight':h['weight']})
         reasons.sort(key=lambda x:(-x['weight'], x['category']))
 
-        # 総合ラベル（モードで補正）
         label = label_total(total)
         max_cat = max(cat_scores.values()) if cat_scores else 0
         safe_count = sum(len(v) for v in cat_safe_hits.values())
@@ -188,7 +171,6 @@ def analyze(request: Request, inp: AnalyzeIn):
 
         png64=_radar_png64(cat_scores, measured_flags)
 
-        # 赤マーク入り根拠
         ev_list=[]
         for cat, snippets in cat_evidence.items():
             for sn in snippets:
@@ -207,10 +189,9 @@ def analyze(request: Request, inp: AnalyzeIn):
             'category_scores':{DISPLAY_NAME_MAP.get(k,k):v for k,v in cat_scores.items()},
             'measured_flags':{DISPLAY_NAME_MAP.get(k,k):bool(measured_flags.get(k, True)) for k in cat_scores.keys()},
             'scale_legend': _scale_legend(),
-            'top_reasons':reasons[:10],             # ← 上位理由（復活）
+            'top_reasons':reasons[:10],
             'evidence': ev_list,
             'chart_png_base64':png64,
-            'recommendations': _suggestions(cat_scores, measured_flags),  # ← 改善提案（復活）
             'notice': "「測定不能」は該当カテゴリにヒット無しの場合に表示。0点＝安全ではなく『懸念が検出されなかった』の意味。"
         }
     except HTTPException:
@@ -218,42 +199,40 @@ def analyze(request: Request, inp: AnalyzeIn):
     except Exception as e:
         REQUESTS_ERROR += 1
         raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
-# --- 管理ダッシュボード API（パスワード式 / サマリーのみ） ---
-from fastapi import Body
 
+# --- 管理ダッシュボードAPI（サマリーのみ／アクセス方式3：パスワード） ---
 @app.post('/admin/data')
-def admin_data(password: str = Body(...)):
+def admin_data(payload: dict = Body(...)):
+    password = (payload or {}).get('password', '')
     expected = os.environ.get("ADMIN_PASS", "")
     if not expected or password != expected:
         raise HTTPException(status_code=401, detail="パスワード不一致")
 
-    # 直近30日の日別利用数 + 低/中/高 比率 + カウンタ
-    path = os.path.join("logs", "usage.csv")
-    daily = {}
-    low = mid = high = 0
+    # logs/usage.csv からサマリー生成
+    path = os.path.join("logs","usage.csv")
+    daily = {}   # {YYYY-MM-DD: count}
+    labels = {"低":0,"中":0,"高":0}
+    total = 0
     if os.path.exists(path):
-        import csv
-        with open(path, newline="", encoding="utf-8") as f:
+        with open(path, newline='', encoding='utf-8') as f:
             r = csv.DictReader(f)
             for row in r:
-                day = (row.get("ts_iso","") or "")[:10]
+                total += 1
+                day = (row.get("ts_iso") or "")[:10]
                 if day:
-                    daily[day] = daily.get(day, 0) + 1
-                label = row.get("label","")
-                if label.startswith("低"): low += 1
-                elif label.startswith("中"): mid += 1
-                elif label.startswith("高"): high += 1
+                    daily[day] = daily.get(day,0)+1
+                lb = (row.get("label") or "")[:1]  # 先頭1文字（低/中/高）
+                if lb in labels: labels[lb]+=1
 
-    # 直近30日に整形
-    from datetime import date, timedelta
-    days = [(date.today() - timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
-    values = [daily.get(d, 0) for d in days]
+    # 直近7日分の折れ線
+    days = sorted(daily.keys())
+    if len(days) > 7:
+        days = days[-7:]
+    daily_values = [daily.get(d,0) for d in days]
 
     return {
-        "requests_total": REQUESTS_TOTAL,
-        "requests_ok": REQUESTS_OK,
-        "requests_error": REQUESTS_ERROR,
-        "today_count": daily.get(date.today().isoformat(), 0),
-        "daily": {"labels": days, "values": values},
-        "labels": {"low": low, "mid": mid, "high": high},
+        "total_requests": total,
+        "by_label": {"low": labels["低"], "mid": labels["中"], "high": labels["高"]},
+        "daily": {"labels": days, "values": daily_values},
     }
+
