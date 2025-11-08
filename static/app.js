@@ -39,7 +39,7 @@ function renderResult(d) {
 
   const tbody = document.querySelector("#scoreTable tbody");
   tbody.innerHTML = "";
-  const cats = Object.keys(d.category_scores);
+  const cats = Object.keys(d.category_scores || {});
   cats.forEach(cat => {
     const tr = document.createElement("tr");
     const tdC = document.createElement("td"); tdC.textContent = cat;
@@ -60,6 +60,22 @@ function renderResult(d) {
     // snippet は HTML（赤マーク含む）
     div.innerHTML = `<b>${e.category}</b>：${e.snippet}`;
     ev.appendChild(div);
+  });
+
+  const rec = document.getElementById("recommendations");
+  rec.innerHTML = "";
+  (d.recommendations || []).forEach(r => {
+    const li = document.createElement("li");
+    li.textContent = `${r.category}: ${r.suggestion}`;
+    rec.appendChild(li);
+  });
+
+  const reasons = document.getElementById("reasons");
+  reasons.innerHTML = "";
+  (d.top_reasons || []).forEach(r => {
+    const li = document.createElement("li");
+    li.textContent = `${r.category}: ${r.reason}（重み${r.weight}）`;
+    reasons.appendChild(li);
   });
 }
 
