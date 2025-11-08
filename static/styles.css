@@ -83,12 +83,6 @@ label {
 .project-footer a:hover {
   color: #ffffff;
 }
-.credit{
-  text-align:center;
-  margin: 20px 0 48px;   /* 上20 / 下48で余白 */
-  font-size:12px;
-  color:#8b93a2;
-}
 .credit a{
   color:#8fc7ff;
   text-decoration:none;
