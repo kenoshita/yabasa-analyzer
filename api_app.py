@@ -218,3 +218,42 @@ def analyze(request: Request, inp: AnalyzeIn):
     except Exception as e:
         REQUESTS_ERROR += 1
         raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
+# --- 管理ダッシュボード API（パスワード式 / サマリーのみ） ---
+from fastapi import Body
+
+@app.post('/admin/data')
+def admin_data(password: str = Body(...)):
+    expected = os.environ.get("ADMIN_PASS", "")
+    if not expected or password != expected:
+        raise HTTPException(status_code=401, detail="パスワード不一致")
+
+    # 直近30日の日別利用数 + 低/中/高 比率 + カウンタ
+    path = os.path.join("logs", "usage.csv")
+    daily = {}
+    low = mid = high = 0
+    if os.path.exists(path):
+        import csv
+        with open(path, newline="", encoding="utf-8") as f:
+            r = csv.DictReader(f)
+            for row in r:
+                day = (row.get("ts_iso","") or "")[:10]
+                if day:
+                    daily[day] = daily.get(day, 0) + 1
+                label = row.get("label","")
+                if label.startswith("低"): low += 1
+                elif label.startswith("中"): mid += 1
+                elif label.startswith("高"): high += 1
+
+    # 直近30日に整形
+    from datetime import date, timedelta
+    days = [(date.today() - timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
+    values = [daily.get(d, 0) for d in days]
+
+    return {
+        "requests_total": REQUESTS_TOTAL,
+        "requests_ok": REQUESTS_OK,
+        "requests_error": REQUESTS_ERROR,
+        "today_count": daily.get(date.today().isoformat(), 0),
+        "daily": {"labels": days, "values": values},
+        "labels": {"low": low, "mid": mid, "high": high},
+    }
