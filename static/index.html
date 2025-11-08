@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>求人票ヤバさ診断</title>
-  <link rel="stylesheet" href="/ui/styles.css">
+  <link rel="stylesheet" href="/ui/styles.css" />
 </head>
 <body>
   <header>
     <h1>求人票ヤバさ診断</h1>
-    <div class="version">API v5.0</div>
+    <div class="version">v5.0</div>
   </header>
 
   <main>
     <section class="input-card">
       <label>URL または 本文（どちらか）</label>
-      <input id="url" type="url" placeholder="https://example.com/job">
+      <input id="url" type="url" placeholder="https://example.com/job" />
       <textarea id="text" rows="8" placeholder="ここに求人本文を貼り付け"></textarea>
 
       <div class="row">
@@ -31,6 +31,7 @@
         <button id="analyzeBtn">診断する</button>
         <span id="status"></span>
       </div>
+
       <p class="legend">
         スコアは各カテゴリ 0〜5（0=問題なし / 5=大いに問題あり）。情報不足で評価できない項目は <b>測定不能</b> と表示します。
       </p>
@@ -67,21 +68,20 @@
 
       <div class="notice-box">
         <p><b>⚠ 注意事項</b></p>
-        <p>0点＝安全 ではなく、「該当する懸念が検出されなかった」の意味です。</p>
-        <p>情報が不足しているカテゴリは <b>測定不能</b> と表示されます。</p>
+        <p>「測定不能」判定は、該当カテゴリにヒットが一切無い場合に表示されます。</p>
+        <p>0点＝安全 ではなく「該当する懸念が検出されなかった」の意味です。情報不足の場合は「測定不能」になります。</p>
       </div>
 
       <div class="disclaimer">
-        <p>本診断結果は、提供された求人情報に基づく自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。<br>
-        最終的な判断は、ご自身の責任とご判断にて行ってください。</p>
+        <p>本診断結果は、提供された求人情報に基づく自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終的な判断は、ご自身の責任とご判断にて行ってください。</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <a class="btn-link" href="/metrics" target="_blank">メトリクスを開く</a>
+    <a class="btn-link" href="/metrics" target="_blank">メトリクス</a>
     <span>｜</span>
-    <a class="btn-link" href="/healthz" target="_blank">ヘルスチェックを開く</a>
+    <a class="btn-link" href="/healthz" target="_blank">ヘルスチェック</a>
   </footer>
 
   <script src="/ui/app.js"></script>
