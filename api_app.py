@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from fastapi import FastAPI, HTTPException, Request, Depends, Body
-from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,9 +22,12 @@ from rules import (
 
 # ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
-app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.6.1')
+app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.6.2')
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
+
+@app.exception_handler(RateLimitExceeded)
+def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    raise HTTPException(status_code=429, detail='レート制限に達しました')
 
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
@@ -101,6 +104,17 @@ def _scale_legend():
         ]
     }
 
+def _suggestions(cat_scores: dict, measured_flags: dict):
+    """改善提案（Bトーン）。測定不能やスコア高めを中心に最大10件。"""
+    out=[]
+    for cat, score in cat_scores.items():
+        name = DISPLAY_NAME_MAP.get(cat, cat)
+        if not measured_flags.get(cat, True):
+            out.append({"category": name, "suggestion": "この項目は求人票上の情報が少ないため、面接時に具体を軽く確認できると安心です。"})
+        elif score >= 3:
+            out.append({"category": name, "suggestion": "ここは少し読み取りづらい部分でした。実例や運用イメージを面接で聞いてみると働き方がクリアになります。"})
+    return out[:10]
+
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
     try:
         if os.environ.get("ENABLE_LOG", "1") != "1":
@@ -160,22 +174,17 @@ def analyze(request: Request, inp: AnalyzeIn):
         reasons.sort(key=lambda x:(-x['weight'], x['category']))
 
         label = label_total(total)
-        max_cat = max(cat_scores.values()) if cat_scores else 0
-        safe_count = sum(len(v) for v in cat_safe_hits.values())
-        if mode == 'strict':
-            if max_cat >= 4 or total >= 12:
-                label = '高（ブラックの可能性大）'
-        elif mode == 'lenient':
-            if label.startswith('高') and safe_count >= 2 and total <= 14:
-                label = '中（注意が必要）'
 
+        # チャート & 根拠
         png64=_radar_png64(cat_scores, measured_flags)
-
         ev_list=[]
         for cat, snippets in cat_evidence.items():
             for sn in snippets:
                 ev_list.append({'category':DISPLAY_NAME_MAP.get(cat, cat), 'snippet':sn})
         ev_list = ev_list[:12]
+
+        # 改善提案（ここで必ず返す）
+        recs = _suggestions(cat_scores, measured_flags)
 
         REQUESTS_OK += 1
         _log_usage(request, src, total, label, mode, inp.sector)
@@ -191,6 +200,7 @@ def analyze(request: Request, inp: AnalyzeIn):
             'scale_legend': _scale_legend(),
             'top_reasons':reasons[:10],
             'evidence': ev_list,
+            'recommendations': recs,
             'chart_png_base64':png64,
             'notice': "「測定不能」は該当カテゴリにヒット無しの場合に表示。0点＝安全ではなく『懸念が検出されなかった』の意味。"
         }
@@ -200,7 +210,7 @@ def analyze(request: Request, inp: AnalyzeIn):
         REQUESTS_ERROR += 1
         raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
 
-# --- 管理ダッシュボードAPI（サマリーのみ／アクセス方式3：パスワード） ---
+# --- 管理ダッシュボードAPI（サマリーのみ／パスワード方式） ---
 @app.post('/admin/data')
 def admin_data(payload: dict = Body(...)):
     password = (payload or {}).get('password', '')
@@ -224,7 +234,7 @@ def admin_data(payload: dict = Body(...)):
                 lb = (row.get("label") or "")[:1]  # 先頭1文字（低/中/高）
                 if lb in labels: labels[lb]+=1
 
-    # 直近7日分の折れ線
+    # 直近7日
     days = sorted(daily.keys())
     if len(days) > 7:
         days = days[-7:]
@@ -235,4 +245,3 @@ def admin_data(payload: dict = Body(...)):
         "by_label": {"low": labels["低"], "mid": labels["中"], "high": labels["高"]},
         "daily": {"labels": days, "values": daily_values},
     }
-
