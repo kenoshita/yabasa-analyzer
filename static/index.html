@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>求人票ヤバさ診断</h1>
-    <div class="version">secured v1.6.0</div>
+    <div class="version">secured v1.6.1</div>
   </header>
 
   <main>
@@ -31,7 +31,6 @@
         <button id="analyzeBtn">診断する</button>
         <span id="status"></span>
       </div>
-
       <p class="legend">
         スコアは各カテゴリ 0〜5（0=問題なし / 5=大いに問題あり）。<br>
         情報不足で評価できない項目は <b>測定不能</b> と表示します。
@@ -61,24 +60,28 @@
       <h3>根拠（抽出スニペット）</h3>
       <div id="evidence"></div>
 
-      <h3>改善提案（簡易）</h3>
+      <h3>改善提案</h3>
       <ul id="recommendations"></ul>
 
-      <h3>注意・免責</h3>
+      <h3>上位理由</h3>
+      <ul id="reasons"></ul>
+
       <div class="notice-box">
         <p><b>⚠ 注意事項</b></p>
         <p>0点＝安全 ではなく、「該当する懸念が検出されなかった」の意味です。</p>
-        <p>情報不足の場合は <b>測定不能</b> になります。</p>
+        <p>情報不足のカテゴリは <b>測定不能</b> になります。</p>
       </div>
+
       <div class="disclaimer">
-        <p>本診断は提供テキストの自動解析であり、企業の実態・法令遵守を保証するものではありません。最終判断はご自身の責任でお願いします。</p>
+        <p>本診断は提供テキストの自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終判断はご自身の責任でお願いします。</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <small>管理者向け：/metrics と /healthz は Bearer トークン必須（UI直リンク不可）</small>
+    <small>管理者向け：/metrics と /healthz は Bearer トークン必須（UIからは直接開けません）。</small>
   </footer>
+
   <script src="/ui/app.js"></script>
 </body>
 </html>
