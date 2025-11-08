@@ -40,3 +40,20 @@ footer{ text-align:center; color:#8b93a2; padding:20px 0 40px; }
 label {
   white-space: nowrap; /* ← ラベルを改行しない */
 }
+.produced-by {
+  text-align: center;
+  color: #9aa5b1;
+  font-size: 0.85rem;
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+.produced-by a {
+  color: #9aa5b1;
+  text-decoration: none;
+  border-bottom: 1px dotted #9aa5b1;
+}
+
+.produced-by a:hover {
+  color: #ffffff;
+}
