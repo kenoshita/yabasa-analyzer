@@ -1,57 +1,106 @@
 import os, io, base64, math, csv, datetime
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 # 日本語フォント（環境にあるものを優先）
-matplotlib.rcParams['font.family'] = ['Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','MS Gothic','sans-serif']
+matplotlib.rcParams["font.family"] = [
+    "Noto Sans CJK JP","Noto Sans JP","Hiragino Sans","MS Gothic","sans-serif"
+]
 
 from rules import (
     score_text, label_total, fetch_text_from_url,
     MAX_PER_CATEGORY, DISPLAY_NAME_MAP
 )
 
-app = FastAPI(title='求人票ヤバさ診断API v5.0', version='1.6.0')
+# ----------------------------------
+# FastAPI 基本設定 & レート制限
+# ----------------------------------
+limiter = Limiter(key_func=get_remote_address, default_limits=["30/minute","200/hour"])
 
-app.add_middleware(
-    CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*']
+app = FastAPI(title="求人票ヤバさ診断 API (secured)", version="1.6.0")
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    lambda request, exc: HTTPException(status_code=429, detail="レート制限に達しました")
 )
 
-# ---- Simple in-memory metrics ----
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(SlowAPIMiddleware)
+
+# ----------------------------------
+# メトリクス（簡易）カウンタ
+# ----------------------------------
 REQUESTS_TOTAL = 0
 REQUESTS_OK = 0
 REQUESTS_ERROR = 0
 
-def _has_static():
-    return os.path.isdir('static') and os.path.isfile(os.path.join('static','index.html'))
+# ----------------------------------
+# セキュア化（Bearer トークン）
+# ----------------------------------
+def _require_token(request: Request, env_name: str):
+    expected = os.environ.get(env_name, "")
+    if not expected:
+        raise HTTPException(status_code=401, detail=f"{env_name} が未設定です")
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization: Bearer <token> を付与してください")
+    token = auth.split(" ", 1)[1].strip()
+    if token != expected:
+        raise HTTPException(status_code=403, detail="無効なトークンです")
 
-@app.get('/', response_class=HTMLResponse)
+def protect_metrics(request: Request):
+    _require_token(request, "METRICS_TOKEN")
+
+def protect_health(request: Request):
+    # PROTECT_HEALTHZ=1 のときのみ保護（既定: 1 = 保護する）
+    if os.environ.get("PROTECT_HEALTHZ", "1") == "1":
+        _require_token(request, "HEALTH_TOKEN")
+
+# ----------------------------------
+# 静的ファイル
+# ----------------------------------
+if os.path.isdir("static"):
+    app.mount("/ui", StaticFiles(directory="static", html=True), name="static_ui")
+
+def _has_static():
+    return os.path.isdir("static") and os.path.isfile(os.path.join("static","index.html"))
+
+@app.get("/", response_class=HTMLResponse)
 def root_page():
     if _has_static():
-        return FileResponse(os.path.join('static','index.html'))
-    return HTMLResponse("""<html><meta charset='utf-8'><body>
-    <h1>セットアップ中</h1>
-    <p>static/index.html を配置して再デプロイしてください。</p>
-    </body></html>""", status_code=200)
+        return FileResponse(os.path.join("static","index.html"))
+    return HTMLResponse(
+        "<html><meta charset='utf-8'><body><h1>セットアップ中</h1>"
+        "<p>static/index.html を配置して再デプロイしてください。</p></body></html>",
+        status_code=200
+    )
 
-if os.path.isdir('static'):
-    app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
-
+# ----------------------------------
+# 入出力スキーマ
+# ----------------------------------
 class AnalyzeIn(BaseModel):
     url: str | None = None
     text: str | None = None
     sector: str | None = None
     mode: str | None = None  # "standard" | "strict" | "lenient"
 
+# ----------------------------------
+# レーダーチャート生成
+# ----------------------------------
 def _radar_png64(scores: dict, measured_flags: dict) -> str:
     cats = list(scores.keys())
     labels = [
-        (DISPLAY_NAME_MAP.get(c, c) + (' (測定不能)' if not measured_flags.get(c, True) else ''))
+        (DISPLAY_NAME_MAP.get(c, c) + (" (測定不能)" if not measured_flags.get(c, True) else ""))
         for c in cats
     ]
     vals = [scores[c] for c in cats]
@@ -67,12 +116,10 @@ def _radar_png64(scores: dict, measured_flags: dict) -> str:
     ax.set_yticklabels([str(i) for i in range(0, MAX_PER_CATEGORY+1)])
     ax.grid(True)
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=160, bbox_inches='tight')
-    plt.close(fig)
-    buf.seek(0)
-    return base64.b64encode(buf.read()).decode('ascii')
+    fig.savefig(buf, format="png", dpi=160, bbox_inches="tight"); plt.close(fig); buf.seek(0)
+    return base64.b64encode(buf.read()).decode("ascii")
 
-def _score_scale_explanation():
+def _scale_legend():
     return {
         "scale":"0〜5（0=問題なし / 5=大いに問題あり）",
         "detail":[
@@ -88,19 +135,16 @@ def _score_scale_explanation():
 def _suggestions(cat_scores: dict, measured_flags: dict) -> list[dict]:
     out = []
     for cat, score in cat_scores.items():
+        title = DISPLAY_NAME_MAP.get(cat, cat)
         if not measured_flags.get(cat, True):
-            out.append({"category": DISPLAY_NAME_MAP.get(cat, cat),
-                        "suggestion":"該当情報が不足しているため評価できません。募集要項や制度の記載を追加してください。"})
+            out.append({"category": title, "suggestion": "情報不足で評価不可。募集要項や制度の記載を追加してください。"})
         else:
             if score >= 4:
-                out.append({"category": DISPLAY_NAME_MAP.get(cat, cat),
-                            "suggestion":"強い懸念があります。表現の具体化、法令遵守の明記、客観的根拠の提示（数値・実績）を行ってください。"})
+                out.append({"category": title, "suggestion": "強い懸念。法令遵守の明記・数値根拠の提示・表現の具体化を行ってください。"})
             elif score == 3:
-                out.append({"category": DISPLAY_NAME_MAP.get(cat, cat),
-                            "suggestion":"曖昧・誇張表現を削除し、制度・金額・休日数などを明確に記載してください。"})
+                out.append({"category": title, "suggestion": "曖昧/誇張を削除し、金額・休日数・上限/下限など具体的に。"})
             elif score == 2:
-                out.append({"category": DISPLAY_NAME_MAP.get(cat, cat),
-                            "suggestion":"ポジティブ表現に偏らず、条件の具体性（例：残業代全額支給、年間休日120日等）を補強してください。"})
+                out.append({"category": title, "suggestion": "ポジティブ一辺倒を避け、固定給・残業代・休暇等を明確化。"})
     return out[:12]
 
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
@@ -121,83 +165,90 @@ def _log_usage(request: Request, source: str, total: int, label: str, mode: str,
     except Exception:
         pass
 
-@app.get('/healthz')
-def healthz():
-    return {'ok': True}
+# ----------------------------------
+# Secure health & metrics
+# ----------------------------------
+@app.get("/healthz", dependencies=[Depends(protect_health)])
+@limiter.limit("10/second")
+def healthz(request: Request):
+    return {"ok": True}
 
-@app.get('/metrics', response_class=PlainTextResponse)
-def metrics():
-    lines = [
-        f'yabasa_requests_total {REQUESTS_TOTAL}',
-        f'yabasa_requests_ok {REQUESTS_OK}',
-        f'yabasa_requests_error {REQUESTS_ERROR}',
-    ]
-    return "\n".join(lines) + "\n"
+@app.get("/metrics", response_class=PlainTextResponse, dependencies=[Depends(protect_metrics)])
+def metrics(request: Request):
+    # Prometheus風テキスト
+    return (
+        f"yabasa_requests_total {REQUESTS_TOTAL}\n"
+        f"yabasa_requests_ok {REQUESTS_OK}\n"
+        f"yabasa_requests_error {REQUESTS_ERROR}\n"
+    )
 
-@app.post('/analyze')
+# ----------------------------------
+# Main API
+# ----------------------------------
+@app.post("/analyze")
+@limiter.limit("10/second")
 def analyze(request: Request, inp: AnalyzeIn):
     global REQUESTS_TOTAL, REQUESTS_OK, REQUESTS_ERROR
     REQUESTS_TOTAL += 1
     try:
-        mode = (inp.mode or 'standard').lower()
-        body = (inp.text or '').strip()
-        src  = 'text'
+        mode = (inp.mode or "standard").lower()
+        body = (inp.text or "").strip(); src = "text"
         if not body and inp.url:
             got = fetch_text_from_url(inp.url)
             if not got:
                 REQUESTS_ERROR += 1
-                raise HTTPException(status_code=400, detail='URLの取得に失敗。本文貼り付けでお試しください。')
-            body = got
-            src  = 'url'
+                raise HTTPException(status_code=400, detail="URLの取得に失敗。本文貼り付けでお試しください。")
+            body = got; src = "url"
         if not body:
             REQUESTS_ERROR += 1
-            raise HTTPException(status_code=400, detail='入力が空です。url か text のどちらかを指定してください。')
+            raise HTTPException(status_code=400, detail="入力が空です。url か text のどちらかを指定してください。")
 
         cat_scores, cat_hits, cat_safe_hits, cat_evidence, total, measured_flags = score_text(body, sector=inp.sector)
 
-        reasons=[]
+        reasons = []
         for cat, hits in cat_hits.items():
             for h in hits:
-                reasons.append({'category':DISPLAY_NAME_MAP.get(cat, cat),'reason':h['reason'],'weight':h['weight']})
-        reasons.sort(key=lambda x:(-x['weight'], x['category']))
+                reasons.append({"category": DISPLAY_NAME_MAP.get(cat, cat), "reason": h["reason"], "weight": h["weight"]})
+        reasons.sort(key=lambda x: (-x["weight"], x["category"]))
 
         label = label_total(total)
         max_cat = max(cat_scores.values()) if cat_scores else 0
         safe_count = sum(len(v) for v in cat_safe_hits.values())
-        if mode == 'strict':
+        if mode == "strict":
             if max_cat >= 4 or total >= 12:
-                label = '高（ブラックの可能性大）'
-        elif mode == 'lenient':
-            if label.startswith('高') and safe_count >= 2 and total <= 14:
-                label = '中（注意が必要）'
+                label = "高（ブラックの可能性大）"
+        elif mode == "lenient":
+            if label.startswith("高") and safe_count >= 2 and total <= 14:
+                label = "中（注意が必要）"
 
         png64 = _radar_png64(cat_scores, measured_flags)
 
         ev_list=[]
         for cat, snippets in cat_evidence.items():
             for sn in snippets:
-                ev_list.append({'category':DISPLAY_NAME_MAP.get(cat, cat), 'snippet':sn})
+                ev_list.append({"category": DISPLAY_NAME_MAP.get(cat, cat), "snippet": sn})
         ev_list = ev_list[:12]
 
         REQUESTS_OK += 1
         _log_usage(request, src, total, label, mode, inp.sector)
 
         return {
-            'source':src,
-            'sector':inp.sector,
-            'mode': mode,
-            'total':total,
-            'label':label,
-            'category_scores':{DISPLAY_NAME_MAP.get(k,k):v for k,v in cat_scores.items()},
-            'measured_flags':{DISPLAY_NAME_MAP.get(k,k):bool(measured_flags.get(k, True)) for k in cat_scores.keys()},
-            'scale_legend': _score_scale_explanation(),
-            'top_reasons':reasons[:10],
-            'evidence': ev_list,
-            'chart_png_base64':png64,
-            'recommendations': _suggestions(cat_scores, measured_flags)
+            "source": src,
+            "sector": inp.sector,
+            "mode": mode,
+            "total": total,
+            "label": label,
+            "category_scores": {DISPLAY_NAME_MAP.get(k,k): v for k, v in cat_scores.items()},
+            "measured_flags": {DISPLAY_NAME_MAP.get(k,k): bool(measured_flags.get(k, True)) for k in cat_scores.keys()},
+            "scale_legend": _scale_legend(),
+            "top_reasons": reasons[:10],
+            "evidence": ev_list,
+            "chart_png_base64": png64,
+            "recommendations": _suggestions(cat_scores, measured_flags),
         }
     except HTTPException:
         raise
     except Exception as e:
         REQUESTS_ERROR += 1
-        raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
+        raise HTTPException(status_code=500, detail=f"サーバーエラー: {str(e)}")
+
