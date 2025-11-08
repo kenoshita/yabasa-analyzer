@@ -22,7 +22,7 @@ from rules import (
 
 # ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
-app = FastAPI(title='求人票ヤバさ診断 API (secured)', version='1.6.0')
+app = FastAPI(title='求人票ヤバさ診断 API (secured)', version='1.6.1')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
@@ -34,7 +34,7 @@ REQUESTS_TOTAL = 0
 REQUESTS_OK = 0
 REQUESTS_ERROR = 0
 
-# ---- Bearer token guards (必須/自分専用) ----
+# ---- Bearer token guards (必須) ----
 def _require_token(request: Request, env_var: str):
     expected = os.environ.get(env_var, "")
     if not expected:
@@ -101,6 +101,21 @@ def _scale_legend():
         ]
     }
 
+def _suggestions(cat_scores: dict, measured_flags: dict) -> list[dict]:
+    out = []
+    for cat, score in cat_scores.items():
+        cat_name = DISPLAY_NAME_MAP.get(cat, cat)
+        if not measured_flags.get(cat, True):
+            out.append({"category": cat_name, "suggestion":"該当情報が不足しているため評価できません。募集要項や制度の記載を追加してください。"})
+        else:
+            if score >= 4:
+                out.append({"category": cat_name, "suggestion":"強い懸念。表現の具体化、法令遵守の明記、客観的根拠（数値・実績）を提示。"})
+            elif score == 3:
+                out.append({"category": cat_name, "suggestion":"曖昧/誇張を削除し、金額・休日数・上限/下限などを明確化。"})
+            elif score == 2:
+                out.append({"category": cat_name, "suggestion":"ポジ表現に偏らず、具体条件（例：残業代全額支給、年休120日）を補強。"})
+    return out[:12]
+
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
     try:
         if os.environ.get("ENABLE_LOG", "1") != "1":
@@ -153,12 +168,14 @@ def analyze(request: Request, inp: AnalyzeIn):
 
         cat_scores, cat_hits, cat_safe_hits, cat_evidence, total, measured_flags = score_text(body, sector=inp.sector)
 
+        # 上位理由の抽出
         reasons=[]
         for cat, hits in cat_hits.items():
             for h in hits:
                 reasons.append({'category':DISPLAY_NAME_MAP.get(cat, cat),'reason':h['reason'],'weight':h['weight']})
         reasons.sort(key=lambda x:(-x['weight'], x['category']))
 
+        # 総合ラベル（モードで補正）
         label = label_total(total)
         max_cat = max(cat_scores.values()) if cat_scores else 0
         safe_count = sum(len(v) for v in cat_safe_hits.values())
@@ -171,6 +188,7 @@ def analyze(request: Request, inp: AnalyzeIn):
 
         png64=_radar_png64(cat_scores, measured_flags)
 
+        # 赤マーク入り根拠
         ev_list=[]
         for cat, snippets in cat_evidence.items():
             for sn in snippets:
@@ -189,10 +207,11 @@ def analyze(request: Request, inp: AnalyzeIn):
             'category_scores':{DISPLAY_NAME_MAP.get(k,k):v for k,v in cat_scores.items()},
             'measured_flags':{DISPLAY_NAME_MAP.get(k,k):bool(measured_flags.get(k, True)) for k in cat_scores.keys()},
             'scale_legend': _scale_legend(),
-            'top_reasons':reasons[:10],
+            'top_reasons':reasons[:10],             # ← 上位理由（復活）
             'evidence': ev_list,
             'chart_png_base64':png64,
-            'notice': "「測定不能」は該当カテゴリにヒット無しの場合に表示。0点＝安全ではなく『懸念が検出されなかった』の意味。",
+            'recommendations': _suggestions(cat_scores, measured_flags),  # ← 改善提案（復活）
+            'notice': "「測定不能」は該当カテゴリにヒット無しの場合に表示。0点＝安全ではなく『懸念が検出されなかった』の意味。"
         }
     except HTTPException:
         raise
