@@ -27,7 +27,6 @@ function renderResult(d) {
   document.getElementById("result").classList.remove("hidden");
   document.getElementById("totalScore").textContent = d.total;
   document.getElementById("totalLabel").textContent = d.label;
-
   document.getElementById("radar").src = "data:image/png;base64," + d.chart_png_base64;
 
   const scaleList = document.getElementById("scaleList");
@@ -60,7 +59,7 @@ function renderResult(d) {
   (d.evidence || []).forEach(e => {
     const div = document.createElement("div");
     div.className = "evi";
-    // snippet は HTML（赤マーク含む）
+    // ここは HTML（赤マーク含む）をそのまま表示
     div.innerHTML = `<b>${e.category}</b>：${e.snippet}`;
     ev.appendChild(div);
   });
