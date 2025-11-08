@@ -152,7 +152,7 @@ def score_text(text: str, sector: str | None = None):
     score = max(0, min(score, MAX_PER_CATEGORY))
     cat_scores[cat]=score; cat_hits[cat]=hits; cat_safe_hits[cat]=safe_hits; cat_evidence[cat]=evidence[:3]; measured_flags[cat]=measured
 
-  # ヒューリスティクス（測定扱いにする）
+  # 追加ヒューリスティクス
   dens = _katakana_density(text)
   if dens >= 0.18:
     cat = "求人票サイン"
