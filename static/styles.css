@@ -57,3 +57,10 @@ label {
 .produced-by a:hover {
   color: #ffffff;
 }
+.beta-badge {
+  font-size: 0.75rem;
+  color: #9aa5b1;
+  margin-top: 6px;
+  text-align: left;
+  opacity: 0.75;
+}
