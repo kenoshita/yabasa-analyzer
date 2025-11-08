@@ -42,10 +42,8 @@ function renderResult(d) {
   const cats = Object.keys(d.category_scores);
   cats.forEach(cat => {
     const tr = document.createElement("tr");
-    const tdC = document.createElement("td");
-    tdC.textContent = cat;
-    const tdS = document.createElement("td");
-    tdS.textContent = d.category_scores[cat];
+    const tdC = document.createElement("td"); tdC.textContent = cat;
+    const tdS = document.createElement("td"); tdS.textContent = d.category_scores[cat];
     const tdM = document.createElement("td");
     const ok = d.measured_flags?.[cat];
     tdM.textContent = ok ? "測定済" : "測定不能";
@@ -59,25 +57,9 @@ function renderResult(d) {
   (d.evidence || []).forEach(e => {
     const div = document.createElement("div");
     div.className = "evi";
-    // ここは HTML（赤マーク含む）をそのまま表示
+    // snippet は HTML（赤マーク含む）
     div.innerHTML = `<b>${e.category}</b>：${e.snippet}`;
     ev.appendChild(div);
-  });
-
-  const rec = document.getElementById("recommendations");
-  rec.innerHTML = "";
-  (d.recommendations || []).forEach(r => {
-    const li = document.createElement("li");
-    li.textContent = `${r.category}: ${r.suggestion}`;
-    rec.appendChild(li);
-  });
-
-  const reasons = document.getElementById("reasons");
-  reasons.innerHTML = "";
-  (d.top_reasons || []).forEach(r => {
-    const li = document.createElement("li");
-    li.textContent = `${r.category}: ${r.reason}（重み${r.weight}）`;
-    reasons.appendChild(li);
   });
 }
 
