@@ -9,18 +9,19 @@
 <body>
   <header>
     <h1>求人票ヤバさ診断</h1>
-    <div class="version">secured v1.6.1</div>
+    <div class="version">secured v1.6.2</div>
   </header>
 
   <main>
     <section class="input-card">
       <label>URL または 本文（どちらか）</label>
       <input id="url" type="url" placeholder="https://example.com/job">
-      <p class="input-note">※ URL取得がうまくいかない場合は、本文をコピーして下の欄に貼り付けてください。</p>
+
+      <p class="hint">※ URL取得がうまくいかない場合は、本文をコピーして下の欄に貼り付けてください。</p>
       <textarea id="text" rows="8" placeholder="ここに求人本文を貼り付け"></textarea>
 
       <div class="row">
-        <label>診断モード</label>
+        <label class="one-line">診断モード</label>
         <select id="mode">
           <option value="standard">標準</option>
           <option value="strict">厳しめ</option>
@@ -30,10 +31,9 @@
 
       <div class="row">
         <button id="analyzeBtn">診断する</button>
-        <div class="beta-badge">β版（改善中）</div>
-
         <span id="status"></span>
       </div>
+
       <p class="legend">
         スコアは各カテゴリ 0〜5（0=問題なし / 5=大いに問題あり）。<br>
         情報不足で評価できない項目は <b>測定不能</b> と表示します。
@@ -69,25 +69,26 @@
       <h3>上位理由</h3>
       <ul id="reasons"></ul>
 
+      <h3>注意・免責</h3>
       <div class="notice-box">
         <p><b>⚠ 注意事項</b></p>
         <p>0点＝安全 ではなく、「該当する懸念が検出されなかった」の意味です。</p>
-        <p>情報不足のカテゴリは <b>測定不能</b> になります。</p>
+        <p>情報不足の場合は <b>測定不能</b> になります。</p>
       </div>
-
       <div class="disclaimer">
-        <p>本診断は提供テキストの自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終判断はご自身の責任でお願いします。</p>
+        <p>本診断は提供テキストの自動解析であり、企業の実態・法令遵守を保証するものではありません。最終判断はご自身の責任でお願いします。</p>
       </div>
     </section>
-    <!-- …（結果セクションの直後） -->
-</main>
+  </main>
+
+  <footer>
+    <div class="credit">
+      働き方リテラシー研究所<br>
+      produced by <a href="https://x.com/careerplanplus" target="_blank" rel="noopener">@careerplanplus</a><br>
+      <span class="hashtag">#働き方を読み解こう</span>
+    </div>
+  </footer>
 
   <script src="/ui/app.js"></script>
-
-<div class="project-footer">
-  <div>働き方リテラシー研究所</div>
-  <div>produced by <a href="https://x.com/careerplanplus" target="_blank">@careerplanplus</a></div>
-  <div>#働き方を読み解こう</div>
-</div>
 </body>
 </html>
