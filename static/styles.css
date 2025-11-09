@@ -5,10 +5,13 @@ header{ display:flex; align-items:center; justify-content:space-between; padding
 h1{ font-size:20px; margin:0; }
 .version{ color:var(--muted); font-size:12px; }
 main{ max-width:1000px; margin:20px auto; padding:0 16px; }
+
 .input-card{ background:var(--card); border:1px solid #1f2733; border-radius:16px; padding:16px; }
 .input-card label{ display:block; margin-bottom:8px; color:#cfe0f5; }
 .input-card input, .input-card textarea, .input-card select{ width:100%; padding:10px; border-radius:10px; border:1px solid #263042; background:#0e1520; color:var(--text); margin-bottom:12px; }
-.row{ display:flex; gap:12px; align-items:center; }
+.row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.hint{ color:#9fb3c8; font-size:12px; }
+
 button{ background:var(--accent); color:#04101f; border:none; padding:10px 16px; border-radius:10px; font-weight:700; cursor:pointer; }
 #status{ color:var(--muted); }
 .legend{ color:var(--muted); font-size:13px; margin:8px 0 0; }
@@ -31,62 +34,11 @@ th, td{ border-bottom:1px solid #1f2733; padding:8px; text-align:left; }
 
 .notice-box { background:#1b2535; border-left:4px solid #ffb020; padding:10px 14px; border-radius:8px; margin:20px 0; color:#e9eef5; }
 .disclaimer { margin-top:12px; font-size:12px; color:#8b93a2; line-height:1.5; }
-footer{ text-align:center; color:#8b93a2; padding:20px 0 40px; }
-.input-note {
-  font-size: 0.85rem;
-  color: #9aa5b1;
-  margin-top: 4px;
-}
-label {
-  white-space: nowrap; /* ← ラベルを改行しない */
-}
-.produced-by {
-  text-align: center;
-  color: #9aa5b1;
-  font-size: 0.85rem;
-  margin-top: 40px;
-  margin-bottom: 20px;
-}
 
-.produced-by a {
-  color: #9aa5b1;
-  text-decoration: none;
-  border-bottom: 1px dotted #9aa5b1;
+.credit{
+  text-align:center;
+  margin: 20px 0 48px;
+  font-size:12px;
+  color:#8b93a2;
 }
-
-.produced-by a:hover {
-  color: #ffffff;
-}
-.beta-badge {
-  font-size: 0.75rem;
-  color: #9aa5b1;
-  margin-top: 6px;
-  text-align: left;
-  opacity: 0.75;
-}
-.project-footer {
-  text-align: center;
-  margin-top: 60px;
-  margin-bottom: 40px;
-  font-size: 0.85rem;
-  color: #9aa5b1;
-  line-height: 1.6;
-  opacity: 0.9;
-}
-
-.project-footer a {
-  color: #9aa5b1;
-  text-decoration: none;
-  border-bottom: 1px dotted #9aa5b1;
-}
-
-.project-footer a:hover {
-  color: #ffffff;
-}
-.credit a{
-  color:#8fc7ff;
-  text-decoration:none;
-}
-.credit a:hover{
-  filter:brightness(1.1);
-}
+.credit a{ color:#8fc7ff; text-decoration: none; }
