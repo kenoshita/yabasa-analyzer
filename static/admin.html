@@ -1,34 +1,35 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>管理ダッシュボード</title>
-  <link rel="stylesheet" href="/ui/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理ダッシュボード</title>
+<link rel="stylesheet" href="/ui/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <main style="max-width:900px;margin:20px auto;color:#e9eef5;">
+  <main style="max-width:960px;margin:20px auto;padding:0 16px;">
     <h2>管理ダッシュボード</h2>
+
     <div id="loginBox">
-      <p>管理パスワード</p>
-      <input id="pwd" type="password" style="padding:8px;width:220px;">
+      <p>管理パスワードを入力してください</p>
+      <input id="pwd" type="password" style="padding:8px;width:240px;">
       <button id="loginBtn">開く</button>
       <div id="loginStatus" style="color:#9fb3c8;margin-top:6px;"></div>
     </div>
 
     <section id="dash" class="hidden">
-      <div class="input-card">
-        <div class="row" style="justify-content:space-between;">
-          <div>総実行回数：<b id="totalNum">0</b></div>
-        </div>
+      <div class="input-card" style="margin-top:10px;">
+        <div class="row"><div>累計リクエスト：<b id="totalNum">0</b></div></div>
       </div>
 
-      <div class="chart-block" style="min-height:260px;">
+      <h3>日別利用数（直近7日）</h3>
+      <div style="height:260px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:10px;">
         <canvas id="dailyChart"></canvas>
       </div>
 
-      <div class="chart-block" style="min-height:220px;">
+      <h3 style="margin-top:18px;">判定比率（低/中/高）</h3>
+      <div style="height:260px;background:#0e1520;border:1px solid #1f2733;border-radius:16px;padding:10px;">
         <canvas id="labelPie"></canvas>
       </div>
     </section>
