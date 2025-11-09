@@ -15,8 +15,8 @@ async function analyze() {
       const err = await res.json().catch(()=>({detail:res.statusText}));
       throw new Error(err.detail || "エラー");
     }
-    const data = await res.json();
-    renderResult(data);
+    const d = await res.json();
+    renderResult(d);
     status.textContent = "完了";
   } catch(e) {
     status.textContent = "エラー: " + e.message;
@@ -57,8 +57,7 @@ function renderResult(d) {
   (d.evidence || []).forEach(e => {
     const div = document.createElement("div");
     div.className = "evi";
-    // snippet は HTML（赤マーク含む）
-    div.innerHTML = `<b>${e.category}</b>：${e.snippet}`;
+    div.innerHTML = `<b>${e.category}</b>：${e.snippet}`; // snippet に赤マーク含む
     ev.appendChild(div);
   });
 
