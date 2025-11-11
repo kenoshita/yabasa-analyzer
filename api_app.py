@@ -12,6 +12,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+# CJKフォントが無くても落ちない（見た目のみ低下）
 matplotlib.rcParams['font.family'] = ['Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','MS Gothic','sans-serif']
 
 from rules import (
@@ -19,18 +20,21 @@ from rules import (
     MAX_PER_CATEGORY, DISPLAY_NAME_MAP
 )
 
+# ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
-app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.6.3')
+app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.7.0')
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(status_code=429, detail='レート制限に達しました'))
 
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
 
+# ---- Simple in-memory metrics ----
 REQUESTS_TOTAL = 0
 REQUESTS_OK = 0
 REQUESTS_ERROR = 0
 
+# ---- Bearer token guards for /metrics & /healthz ----
 def _require_token(request: Request, env_var: str):
     expected = os.environ.get(env_var, "")
     if not expected:
@@ -57,6 +61,7 @@ def root_page():
         return FileResponse(os.path.join('static','index.html'))
     return HTMLResponse("<html><meta charset='utf-8'><body><h1>セットアップ中</h1></body></html>")
 
+# /ui で static を配信
 if os.path.isdir('static'):
     app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
 
@@ -96,15 +101,19 @@ def _scale_legend():
         ]
     }
 
-def _suggestions(cat_scores: dict, measured_flags: dict):
+def _suggestions_sharp(cat_scores: dict, measured_flags: dict) -> list[dict]:
     out=[]
     for cat, score in cat_scores.items():
         name = DISPLAY_NAME_MAP.get(cat, cat)
         if not measured_flags.get(cat, True):
-            out.append({"category": name, "suggestion": "この項目は求人票上の情報が少ないため、面接時に具体的に確認できると安心です。"})
-        elif score >= 3:
-            out.append({"category": name, "suggestion": "ここはやや読み取りづらい部分でした。面接で運用例・数値（上限/下限・休日数など）を軽く確認してみましょう。"})
-    return out[:10]
+            out.append({"category": name, "suggestion": "情報不足で判定不可。募集文に必要条件・勤務条件・休日/残業の実績など具体記載を追加してください。"})
+        elif score >= 5:
+            out.append({"category": name, "suggestion": "重大懸念。募集文の公開を一時停止し、法令・規程に合うかを即時点検。修正の上で再掲を推奨。"})
+        elif score == 4:
+            out.append({"category": name, "suggestion": "高リスク。曖昧/誇張表現を削除し、数値と運用実態（残業代支給方法・休日数・上限）を明確化してください。"})
+        elif score == 3:
+            out.append({"category": name, "suggestion": "要修正。候補者が誤読し得る箇所を具体例・定義・範囲（上限/下限）で言い換えてください。"})
+    return out[:12]
 
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
     try:
@@ -174,7 +183,7 @@ def analyze(request: Request, inp: AnalyzeIn):
                 ev_list.append({'category':DISPLAY_NAME_MAP.get(cat, cat), 'snippet':sn})
         ev_list = ev_list[:12]
 
-        recs = _suggestions(cat_scores, measured_flags)
+        recommendations = _suggestions_sharp(cat_scores, measured_flags)
 
         REQUESTS_OK += 1
         _log_usage(request, src, total, label, mode, inp.sector)
@@ -190,7 +199,7 @@ def analyze(request: Request, inp: AnalyzeIn):
             'scale_legend': _scale_legend(),
             'top_reasons':reasons[:10],
             'evidence': ev_list,
-            'recommendations': recs,
+            'recommendations': recommendations,
             'chart_png_base64':png64,
             'notice': "「測定不能」は該当カテゴリにヒット無しの場合に表示。0点＝安全ではなく『懸念が検出されなかった』の意味。"
         }
@@ -200,7 +209,7 @@ def analyze(request: Request, inp: AnalyzeIn):
         REQUESTS_ERROR += 1
         raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
 
-# --- 管理ダッシュボード（サマリーのみ / パスワード方式） ---
+# --- 管理ダッシュボード（サマリーのみ、既存と同じ） ---
 @app.post('/admin/data')
 def admin_data(payload: dict = Body(...)):
     password = (payload or {}).get('password', '')
@@ -233,3 +242,4 @@ def admin_data(payload: dict = Body(...)):
         "by_label": {"low": labels["低"], "mid": labels["中"], "high": labels["高"]},
         "daily": {"labels": days, "values": daily_values},
     }
+
