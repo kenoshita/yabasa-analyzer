@@ -3,7 +3,7 @@ import requests, re, unicodedata
 
 MAX_PER_CATEGORY = 5
 
-# 表示名のマッピング（UIと一致）
+# 表示名のマッピング（UIと一致させる）
 DISPLAY_NAME_MAP = {
   "勤務時間・休日":"勤務時間・休日",
   "給与・待遇":"給与・待遇",
@@ -18,7 +18,6 @@ def preprocess_text(raw: str) -> str:
     if not raw:
         return ""
     txt = unicodedata.normalize("NFKC", raw)
-    # 求人サイトの定型ノイズ（抜粋）
     noise_keys = ["最近見た求人","おすすめ求人","会員登録","キーワードで探す","スカウト","応募履歴","関連の求人","閲覧履歴","人気のキーワード","この求人を保存"]
     for k in noise_keys:
         txt = txt.replace(k, " ")
@@ -26,38 +25,35 @@ def preprocess_text(raw: str) -> str:
     txt = re.sub(r"\n{3,}", "\n\n", txt)
     return txt.strip()
 
-# ルール本体（ヒットで加点）
+# ---- ルール（厳しめ補強）----
 RULES_BASE = {
   "仕事内容・募集条件":[
     {"pattern": r"やりがい|夢を実現|情熱|根性|気合|精神論", "weight": 1, "reason": "抽象語で仕事内容が曖昧"},
-    {"pattern": r"未経験\s*歓迎|学歴\s*不問|経歴\s*不問|ポテンシャル採用|人物重視", "weight": 1, "reason": "要件が甘く大量採用/高離職の懸念"},
+    {"pattern": r"未経験\s*大歓迎|未経験\s*歓迎|学歴\s*不問|経歴\s*不問|ポテンシャル採用|人物重視", "weight": 1, "reason": "要件が甘く大量採用/高離職の懸念"},
     {"pattern": r"幹部候補|すぐに.*?昇進|キャリアアップ.*?(約束|確約|保証)", "weight": 2, "reason": "過度な昇進保証は誇大表示の懸念"},
     {"pattern": r"(\bノルマ\b|厳しい目標|高いKPI|KPI至上主義)", "weight": 2, "reason": "過度な数値プレッシャーの示唆"},
     {"pattern": r"(0→1|ゼロイチ|何でもやる|マルチロール)", "weight": 2, "reason": "役割不明確・過重負荷の恐れ"},
-    {"pattern": r"(若手活躍中|若手が活躍)", "weight": 1, "reason": "若手を強調 → 離職率が高い可能性"},
+    {"pattern": r"(若手活躍中|若手が活躍|若い人でも活躍)", "weight": 1, "reason": "若手を強調 → 高離職の可能性"},
     {"pattern": r"(入社.?1年.*リーダー|入社.?一年.*リーダー|1年でリーダー|幹部候補)", "weight": 2, "reason": "短期間での昇進を強調"},
-    # 追加：広告の過度な鼓舞表現
-    {"pattern": r"やる気さえあれば|やる気があれば誰でも|全力応援", "weight": 1, "reason": "精神論・鼓舞で負荷を覆い隠す懸念"},
+    {"pattern": r"月\s*\d{1,3}\s*回\s*程度.*(同行|訪問)", "weight": 1, "reason": "訪問/同行回数が多い可能性"},
   ],
   "給与・待遇":[
     {"pattern": r"上限\s*なし|青天井|年収.*?(可能|上限なし)|高年収", "weight": 2, "reason": "歩合依存/不安定収入の懸念"},
-    {"pattern": r"(歩合|出来高|インセンティブ)(のみ|中心|比率が高い)?", "weight": 1, "reason": "固定給依存度が低い可能性"},
+    {"pattern": r"(歩合|出来高|インセンティブ)(のみ|中心|比率が高い|あり)", "weight": 1, "reason": "固定給依存度が低い可能性"},
     {"pattern": r"(固定給|基本給)\s*(未記載|不明|なし)", "weight": 3, "reason": "最低保障不明（高リスク）"},
     {"pattern": r"固定残業[^0-9]*(4[0-9]|[5-9][0-9])\s*時間", "weight": 3, "reason": "固定残業40h以上"},
     {"pattern": r"固定残業\s*(\d+)\s*時間|みなし.*?(\d+)\s*時間", "weight": 3, "reason": "固定/みなし残業の内包"},
     {"pattern": r"残業代.*?(不支給|なし|込み|含む)", "weight": 3, "reason": "残業代不支給/込み"},
-    {"pattern": r"試用期間.*?(減額|給与.*?下がる|手当.*?なし)", "weight": 2, "reason": "過度な試用条件"},
-    {"pattern": r"交通費.*?(支給なし|自費)", "weight": 1, "reason": "基本的な手当が出ない"},
     {"pattern": r"年収.*?1000\s*万", "weight": 2, "reason": "不自然に高い年収の強調"},
+    # 年収幅の広さ（補助的に解析）
   ],
   "勤務時間・休日":[
     {"pattern": r"裁量労働(制)?", "weight": 2, "reason": "時間管理/残業代不透明の恐れ"},
     {"pattern": r"みなし残業|固定残業|フレックスタイム.*?コアなし", "weight": 2, "reason": "残業代実質不払い/際限ない稼働の懸念"},
+    {"pattern": r"(月|平均)?\s*(残業|時間外).*(60|70|80)\s*時間", "weight": 3, "reason": "月60–80h級の長時間残業の示唆"},
     {"pattern": r"残業\s*代.*?なし|残業代は支給しません", "weight": 3, "reason": "違法の可能性（最重大リスク）"},
     {"pattern": r"(週休|休日).*(不定|シフト制のみ|応相談のみ)", "weight": 2, "reason": "休日体制が不透明"},
-    {"pattern": r"(深夜|早朝).*(対応|勤務)|長時間.*?勤務", "weight": 1, "reason": "長時間/変則労働の示唆"},
-    # 追加：月60〜80時間などの長時間示唆
-    {"pattern": r"月(平均)?\s*(6[0-9]|7[0-9]|8[0-9]|9[0-9])\s*時間", "weight": 3, "reason": "長時間残業の明確な示唆"},
+    {"pattern": r"繁忙期.*(土曜|休日).*出勤", "weight": 2, "reason": "繁忙期の休日運用に注意"},
   ],
   "勤務地・募集人数":[
     {"pattern": r"全国各地|日本全国|海外\s*あり|転勤\s*あり", "weight": 1, "reason": "配属不透明/転勤リスク"},
@@ -68,12 +64,10 @@ RULES_BASE = {
     {"pattern": r"アットホーム|社員は家族|一体感|体育会系|家族のよう", "weight": 1, "reason": "精神論でハードワークを正当化の恐れ"},
     {"pattern": r"社員旅行|イベント多数|飲み会.*?多数|毎週飲み会", "weight": 1, "reason": "プライベート侵食の懸念"},
     {"pattern": r"(社会保険|厚生年金|雇用保険|労災|有給|産休|育休).*(未記載|不明|記載なし)", "weight": 3, "reason": "法定福利の不備（最重大リスク）"},
-    # 追加：20代中心など年齢バイアスを示唆する訴求
-    {"pattern": r"20代が中心|平均年齢\s*20代", "weight": 2, "reason": "若年層偏重の示唆（高離職/年齢バイアスの可能性）"},
   ],
   "求人票サイン":[
-    {"pattern": r"平均年齢.?20代", "weight": 2, "reason": "平均年齢20代 → 高離職率の可能性"},
-    {"pattern": r"人物.*重視|やる気.*重視", "weight": 1, "reason": "基準が曖昧 → 大量採用の懸念"},
+    {"pattern": r"平均年齢.?20代|20代が中心|20代中心", "weight": 2, "reason": "若年比率が高い → 早期離職の可能性"},
+    {"pattern": r"人物.*重視|やる気.*重視|やる気さえあれば", "weight": 1, "reason": "基準が曖昧 → 大量採用の懸念"},
     {"pattern": r"若手活躍中|入社.?1年.*リーダー|幹部候補", "weight": 2, "reason": "短期昇進/若手強調"},
   ],
   "企業HPサイン":[
@@ -84,7 +78,6 @@ RULES_BASE = {
   ],
 }
 
-# 安全側のガード（ヒットで減点＝リスク軽減）
 SAFE_GUARDS = {
   "給与・待遇":[
     {"pattern": r"基本給\s*[\d,]+?\s*万?円|固定給\s*[\d,]+?\s*万?円", "negative_weight": 1, "note":"基本給が明記"},
@@ -92,8 +85,8 @@ SAFE_GUARDS = {
   ],
   "勤務時間・休日":[
     {"pattern": r"残業代.*?(全額|法令どおり|1分単位|別途支給)", "negative_weight": 2, "note":"残業代の適正支給を明記"},
+    # 「完全週休2日」は評価を下げ過ぎないよう -1 に留める
     {"pattern": r"完全?週休\s*2日|年間休日\s*(120|125|130)\s*日", "negative_weight": 1, "note":"休日制度が明確/十分"},
-    {"pattern": r"平均残業\s*(20|30)\s*時間", "negative_weight": 1, "note":"残業実績が控えめ"},
   ],
   "社風・福利厚生":[
     {"pattern": r"社会保険.*?完備|各種社会保険完備", "negative_weight": 2, "note":"法定福利を明記"},
@@ -101,20 +94,15 @@ SAFE_GUARDS = {
   ],
 }
 
-THRESHOLDS = [
-    (0, 6, "低（比較的安全）"),
-    (7, 12, "中（注意が必要）"),
-    (13, 999, "高（ブラックの可能性大）")
-]
+THRESHOLDS=[(0,6,"低（比較的安全）"),(7,12,"中（注意が必要）"),(13,999,"高（ブラックの可能性大）")]
 
 def fetch_text_from_url(url:str)->str:
   try:
-    r = requests.get(url, headers={"User-Agent":"Mozilla/5.0"}, timeout=20)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
+    r=requests.get(url,headers={"User-Agent":"Mozilla/5.0"},timeout=20); r.raise_for_status()
+    soup=BeautifulSoup(r.text,"html.parser")
     for t in soup(["script","style","noscript"]): t.decompose()
-    text = soup.get_text("\n")
-    text = re.sub(r"\n{2,}","\n", text)
+    text=soup.get_text("\n")
+    text=re.sub(r"\n{2,}","\n",text)
     return preprocess_text(text)[:80000]
   except Exception:
     return ""
@@ -125,7 +113,6 @@ def _collect_evidence(text: str, pattern: str, window: int = 40) -> list[str]:
     s = max(0, m.start()-window); e = min(len(text), m.end()+window)
     snippet = text[s:e].replace("\n"," ")
     matched = text[m.start():m.end()]
-    # 赤文字＆太字でハイライト
     snippet = snippet.replace(matched, f"<mark style='color:#ff5d5d; font-weight:bold;'>{matched}</mark>")
     out.append(snippet)
     if len(out) >= 3: break
@@ -164,6 +151,7 @@ def score_text(text: str, sector: str | None = None):
         score -= guard["negative_weight"]
         safe_hits.append(guard)
         measured = True
+
     score = max(0, min(score, MAX_PER_CATEGORY))
     cat_scores[cat]=score; cat_hits[cat]=hits; cat_safe_hits[cat]=safe_hits; cat_evidence[cat]=evidence[:3]; measured_flags[cat]=measured
 
@@ -195,3 +183,4 @@ def label_total(total: int) -> str:
     if lo <= total <= hi:
       return label
   return "不明"
+
