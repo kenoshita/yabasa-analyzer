@@ -12,7 +12,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-# CJKフォントが無くても落ちない（見た目のみ低下）
 matplotlib.rcParams['font.family'] = ['Noto Sans CJK JP','Noto Sans JP','Hiragino Sans','MS Gothic','sans-serif']
 
 from rules import (
@@ -20,7 +19,6 @@ from rules import (
     MAX_PER_CATEGORY, DISPLAY_NAME_MAP
 )
 
-# ---- Rate limit / app ----
 limiter = Limiter(key_func=get_remote_address, default_limits=['30/minute','200/hour'])
 app = FastAPI(title='求人票ヤバさ診断 API (secured + admin)', version='1.6.3')
 app.state.limiter = limiter
@@ -29,12 +27,10 @@ app.add_exception_handler(RateLimitExceeded, lambda request, exc: HTTPException(
 app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 app.add_middleware(SlowAPIMiddleware)
 
-# ---- Simple in-memory metrics ----
 REQUESTS_TOTAL = 0
 REQUESTS_OK = 0
 REQUESTS_ERROR = 0
 
-# ---- Bearer token guards for /metrics & /healthz ----
 def _require_token(request: Request, env_var: str):
     expected = os.environ.get(env_var, "")
     if not expected:
@@ -61,7 +57,6 @@ def root_page():
         return FileResponse(os.path.join('static','index.html'))
     return HTMLResponse("<html><meta charset='utf-8'><body><h1>セットアップ中</h1></body></html>")
 
-# /ui で static を配信
 if os.path.isdir('static'):
     app.mount('/ui', StaticFiles(directory='static', html=True), name='static_ui')
 
@@ -102,19 +97,14 @@ def _scale_legend():
     }
 
 def _suggestions(cat_scores: dict, measured_flags: dict):
-    """トーンB：やわらか注意喚起 + 情報不足は『面接で軽く確認』提案"""
     out=[]
     for cat, score in cat_scores.items():
         name = DISPLAY_NAME_MAP.get(cat, cat)
         if not measured_flags.get(cat, True):
-            out.append({"category": name, "suggestion": "この項目は求人情報が少ないため、面接時に具体例や運用を軽く確認できると安心です。"})
-        elif score >= 4:
-            out.append({"category": name, "suggestion": "強めの気配があります。表現の具体性（数値・範囲・実績）や運用実態を確認しておきましょう。"})
-        elif score == 3:
-            out.append({"category": name, "suggestion": "やや読み取りづらい箇所です。制度や条件の“上限/下限・休日数・支給条件”など、具体項目を質問してクリアにしましょう。"})
-        elif score == 2:
-            out.append({"category": name, "suggestion": "前向きな表現に偏りがちかも。客観要素（例：残業代の扱い、年間休日、昇給基準）を一言添えてもらえると安心感が増します。"})
-    return out[:12]
+            out.append({"category": name, "suggestion": "この項目は求人票上の情報が少ないため、面接時に具体的に確認できると安心です。"})
+        elif score >= 3:
+            out.append({"category": name, "suggestion": "ここはやや読み取りづらい部分でした。面接で運用例・数値（上限/下限・休日数など）を軽く確認してみましょう。"})
+    return out[:10]
 
 def _log_usage(request: Request, source: str, total: int, label: str, mode: str, sector: str | None):
     try:
@@ -160,44 +150,30 @@ def analyze(request: Request, inp: AnalyzeIn):
             got=fetch_text_from_url(inp.url)
             if not got:
                 REQUESTS_ERROR += 1
-                raise HTTPException(status_code=400, detail='URLの取得に失敗。本文コピペでお試しください。')
+                raise HTTPException(status_code=400, detail='URLの取得に失敗。本文貼り付けでお試しください。')
             body=got; src='url'
         if not body:
             REQUESTS_ERROR += 1
             raise HTTPException(status_code=400, detail='入力が空です。url か text のどちらかを指定してください。')
 
-        # 採点
         cat_scores, cat_hits, cat_safe_hits, cat_evidence, total, measured_flags = score_text(body, sector=inp.sector)
 
-        # 上位理由
         reasons=[]
         for cat, hits in cat_hits.items():
             for h in hits:
                 reasons.append({'category':DISPLAY_NAME_MAP.get(cat, cat),'reason':h['reason'],'weight':h['weight']})
         reasons.sort(key=lambda x:(-x['weight'], x['category']))
 
-        # 総合ラベル（モード補正は最小限）
         label = label_total(total)
-        max_cat = max(cat_scores.values()) if cat_scores else 0
-        safe_count = sum(len(v) for v in cat_safe_hits.values())
-        if mode == 'strict':
-            if max_cat >= 4 or total >= 12:
-                label = '高（ブラックの可能性大）'
-        elif mode == 'lenient':
-            if label.startswith('高') and safe_count >= 2 and total <= 14:
-                label = '中（注意が必要）'
 
-        # レーダー
         png64=_radar_png64(cat_scores, measured_flags)
 
-        # 根拠（赤マーク入りスニペット）
         ev_list=[]
         for cat, snippets in cat_evidence.items():
             for sn in snippets:
                 ev_list.append({'category':DISPLAY_NAME_MAP.get(cat, cat), 'snippet':sn})
         ev_list = ev_list[:12]
 
-        # 改善提案（やわらか注意喚起）
         recs = _suggestions(cat_scores, measured_flags)
 
         REQUESTS_OK += 1
@@ -224,7 +200,7 @@ def analyze(request: Request, inp: AnalyzeIn):
         REQUESTS_ERROR += 1
         raise HTTPException(status_code=500, detail=f'サーバーエラー: {str(e)}')
 
-# --- 管理ダッシュボードAPI（サマリーのみ／アクセス方式3：パスワード） ---
+# --- 管理ダッシュボード（サマリーのみ / パスワード方式） ---
 @app.post('/admin/data')
 def admin_data(payload: dict = Body(...)):
     password = (payload or {}).get('password', '')
@@ -232,9 +208,8 @@ def admin_data(payload: dict = Body(...)):
     if not expected or password != expected:
         raise HTTPException(status_code=401, detail="パスワード不一致")
 
-    # logs/usage.csv からサマリー生成
     path = os.path.join("logs","usage.csv")
-    daily = {}   # {YYYY-MM-DD: count}
+    daily = {}
     labels = {"低":0,"中":0,"高":0}
     total = 0
     if os.path.exists(path):
@@ -245,10 +220,9 @@ def admin_data(payload: dict = Body(...)):
                 day = (row.get("ts_iso") or "")[:10]
                 if day:
                     daily[day] = daily.get(day,0)+1
-                lb = (row.get("label") or "")[:1]  # 先頭1文字（低/中/高）
+                lb = (row.get("label") or "")[:1]
                 if lb in labels: labels[lb]+=1
 
-    # 直近7日分の折れ線
     days = sorted(daily.keys())
     if len(days) > 7:
         days = days[-7:]
