@@ -20,6 +20,7 @@
     --warn:    #B87A1A;
     --danger:  #B5342A;
     --safe:    #2C7A2E;
+    --gold:    #B8862A;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -31,7 +32,6 @@
     line-height: 1.8;
   }
 
-  /* Header */
   header {
     background: var(--white);
     border-bottom: 1px solid var(--line);
@@ -39,299 +39,170 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    position: sticky; top: 0; z-index: 100;
   }
   .logo { display: flex; align-items: center; gap: 14px; }
-  .logo-ilora {
-    font-family: 'Noto Serif JP', serif;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: 0.06em;
-  }
+  .logo-ilora { font-family: 'Noto Serif JP', serif; font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: 0.06em; }
   .logo-sep { width: 1px; height: 16px; background: var(--line); }
   .logo-product { font-size: 13px; color: var(--muted); }
-  .header-tag {
-    font-size: 11px;
-    color: var(--green);
-    border: 1px solid rgba(58,107,60,0.3);
-    padding: 3px 10px;
-    border-radius: 20px;
-    letter-spacing: 0.06em;
-  }
+  .header-tag { font-size: 11px; color: var(--green); border: 1px solid rgba(58,107,60,0.3); padding: 3px 10px; border-radius: 20px; letter-spacing: 0.06em; }
 
-  /* Container */
   .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
 
-  /* Hero */
   .hero { padding: 56px 0 40px; text-align: center; }
-  .hero-label {
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    color: var(--green);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: block;
-  }
-  .hero h1 {
-    font-family: 'Noto Serif JP', serif;
-    font-size: clamp(24px, 3.5vw, 34px);
-    font-weight: 700;
-    color: var(--ink);
-    line-height: 1.5;
-    margin-bottom: 20px;
-  }
-  .hero-box {
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 24px 32px;
-  }
+  .hero-label { font-size: 11px; letter-spacing: 0.16em; color: var(--green); text-transform: uppercase; margin-bottom: 16px; display: block; }
+  .hero h1 { font-family: 'Noto Serif JP', serif; font-size: clamp(24px, 3.5vw, 34px); font-weight: 700; color: var(--ink); line-height: 1.5; margin-bottom: 20px; }
+  .hero-box { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 24px 32px; }
   .hero-box p { font-size: 14px; color: var(--ink2); line-height: 1.9; }
   .hero-box .sub { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
-  /* Section label */
-  .section-label {
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: var(--green);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .section-label::before {
-    content: '';
-    display: inline-block;
-    width: 4px; height: 12px;
-    background: var(--green);
-    border-radius: 2px;
-  }
+  .section-label { font-size: 11px; letter-spacing: 0.12em; color: var(--green); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .section-label::before { content: ''; display: inline-block; width: 4px; height: 12px; background: var(--green); border-radius: 2px; }
 
-  /* Inputs */
   input[type="text"], textarea {
-    width: 100%;
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: var(--ink);
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-    resize: vertical;
+    width: 100%; background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 16px; color: var(--ink); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px; outline: none; transition: border-color 0.2s; resize: vertical;
   }
   input[type="text"]::placeholder, textarea::placeholder { color: var(--muted); font-size: 13px; }
   input[type="text"]:focus, textarea:focus { border-color: var(--green); }
 
-  .divider-or {
-    display: flex; align-items: center; gap: 12px;
-    margin: 14px 0;
-    color: var(--muted); font-size: 12px;
-  }
-  .divider-or::before, .divider-or::after {
-    content: ''; flex: 1; height: 1px; background: var(--line);
-  }
+  .divider-or { display: flex; align-items: center; gap: 12px; margin: 14px 0; color: var(--muted); font-size: 12px; }
+  .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-  /* Option buttons */
   .option-row { display: flex; gap: 8px; }
   .opt-btn {
-    flex: 1;
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 9px 8px;
-    color: var(--muted);
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.18s;
-    text-align: center;
-    line-height: 1.4;
+    flex: 1; background: var(--white); border: 1px solid var(--line); border-radius: 6px;
+    padding: 9px 8px; color: var(--muted); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; cursor: pointer; transition: all 0.18s; text-align: center; line-height: 1.4;
   }
   .opt-btn:hover { border-color: var(--green); color: var(--green); }
-  .opt-btn.active {
-    background: rgba(58,107,60,0.07);
-    border-color: var(--green);
-    color: var(--green);
-    font-weight: 500;
-  }
+  .opt-btn.active { background: rgba(58,107,60,0.07); border-color: var(--green); color: var(--green); font-weight: 500; }
 
-  /* Analyze button */
   .analyze-btn {
-    width: 100%;
-    background: var(--green2);
-    border: none; border-radius: 8px;
-    padding: 15px;
-    color: var(--white);
-    font-family: 'Noto Serif JP', serif;
-    font-size: 15px; font-weight: 600;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-    margin-top: 16px;
+    width: 100%; background: var(--green2); border: none; border-radius: 8px;
+    padding: 15px; color: var(--white); font-family: 'Noto Serif JP', serif;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.08em; cursor: pointer;
+    transition: background 0.2s, transform 0.1s; margin-top: 16px;
   }
   .analyze-btn:hover { background: var(--green); }
   .analyze-btn:active { transform: scale(0.99); }
   .analyze-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
 
-  /* Loading */
   .loading { display: none; text-align: center; padding: 48px; }
   .loading.show { display: block; }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 2px solid var(--line);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-  }
+  .spinner { width: 36px; height: 36px; border: 2px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Result */
   #result { display: none; }
   #result.show { display: block; }
 
-  .report-title {
-    font-family: 'Noto Serif JP', serif;
-    font-size: 22px; font-weight: 700;
-    text-align: center;
-    color: var(--ink);
-    padding: 40px 0 6px;
-  }
+  .report-title { font-family: 'Noto Serif JP', serif; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); padding: 40px 0 6px; }
   .report-sub { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 28px; }
 
-  /* Risk box */
-  .risk-box {
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 22px 24px;
-    margin-bottom: 16px;
-    display: flex; align-items: center; gap: 18px;
-  }
+  .risk-box { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 22px 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 18px; }
   .risk-bar { width: 6px; align-self: stretch; border-radius: 4px; flex-shrink: 0; }
-  .risk-bar.low  { background: var(--safe); }
-  .risk-bar.mid  { background: var(--warn); }
+  .risk-bar.low { background: var(--safe); }
+  .risk-bar.mid { background: var(--warn); }
   .risk-bar.high { background: var(--danger); }
-  .risk-label {
-    font-family: 'Noto Serif JP', serif;
-    font-size: 20px; font-weight: 700;
-  }
-  .low  .risk-label { color: var(--safe); }
-  .mid  .risk-label { color: var(--warn); }
+  .risk-label { font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 700; }
+  .low .risk-label { color: var(--safe); }
+  .mid .risk-label { color: var(--warn); }
   .high .risk-label { color: var(--danger); }
   .risk-score-note { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-  /* Report section */
-  .report-section {
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    margin-bottom: 14px;
-    overflow: hidden;
-  }
-  .report-section-header {
-    padding: 13px 22px;
-    font-size: 11px; letter-spacing: 0.12em;
-    color: var(--green); text-transform: uppercase;
-    border-bottom: 1px solid var(--line);
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(58,107,60,0.03);
-    font-weight: 500;
-  }
+  .report-section { background: var(--white); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+  .report-section-header { padding: 13px 22px; font-size: 11px; letter-spacing: 0.12em; color: var(--green); text-transform: uppercase; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; background: rgba(58,107,60,0.03); font-weight: 500; }
   .report-section-body { padding: 18px 22px; }
 
-  /* Category score bars */
-  .cat-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--line);
-  }
+  .cat-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
   .cat-row:last-child { border-bottom: none; }
   .cat-name { font-size: 13px; min-width: 130px; color: var(--ink2); }
   .cat-bar-wrap { flex: 1; height: 5px; background: var(--bg2); border-radius: 3px; }
   .cat-bar { height: 100%; border-radius: 3px; transition: width 0.7s ease; }
   .cat-num { font-size: 13px; font-weight: 600; min-width: 20px; text-align: right; }
-  .cat-unmeasured { font-size: 11px; color: var(--muted); }
 
-  /* Concern items */
-  .concern-item {
-    border-left: 3px solid var(--warn);
-    padding: 13px 14px;
-    margin-bottom: 10px;
-    background: rgba(184,122,26,0.04);
-    border-radius: 0 6px 6px 0;
-  }
+  .concern-item { border-left: 3px solid var(--warn); padding: 13px 14px; margin-bottom: 10px; background: rgba(184,122,26,0.04); border-radius: 0 6px 6px 0; }
   .concern-item:last-child { margin-bottom: 0; }
   .concern-item.high { border-left-color: var(--danger); background: rgba(181,52,42,0.04); }
-  .concern-item.low  { border-left-color: var(--safe);   background: rgba(44,122,46,0.04); }
-  .concern-cat {
-    font-size: 10px; letter-spacing: 0.1em;
-    color: var(--muted); text-transform: uppercase;
-    margin-bottom: 5px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .score-badge {
-    background: var(--bg2); color: var(--ink2);
-    border-radius: 10px; padding: 1px 8px;
-    font-size: 10px; font-weight: 600;
-  }
+  .concern-cat { font-size: 10px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .score-badge { background: var(--bg2); color: var(--ink2); border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 600; }
   .concern-text { font-size: 13px; line-height: 1.8; color: var(--ink); }
-  .concern-evidence {
-    margin-top: 8px; font-size: 11px; color: var(--muted);
-    line-height: 1.7; padding: 8px 10px;
-    background: var(--bg); border-radius: 4px;
-  }
+  .concern-evidence { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.7; padding: 8px 10px; background: var(--bg); border-radius: 4px; }
 
-  /* Positive pills */
-  .positive-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(44,122,46,0.08);
+  /* ── 問い合わせ申請セクション ── */
+  .inquiry-section {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-top: 24px;
+    overflow: hidden;
+  }
+  .inquiry-header {
+    padding: 16px 22px;
+    background: var(--green2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .inquiry-header-text { font-family: 'Noto Serif JP', serif; font-size: 16px; font-weight: 600; color: var(--white); }
+  .inquiry-header-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .inquiry-body { padding: 22px; }
+
+  /* 懸念点チェックボックス */
+  .concern-check {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px; margin-bottom: 8px;
+    border: 1px solid var(--line); border-radius: 8px;
+    cursor: pointer; transition: all 0.18s; background: var(--bg);
+  }
+  .concern-check:hover { border-color: var(--green); background: rgba(58,107,60,0.03); }
+  .concern-check.selected { border-color: var(--green); background: rgba(58,107,60,0.06); }
+  .concern-check input[type="checkbox"] { margin-top: 3px; accent-color: var(--green); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+  .concern-check-cat { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+  .concern-check-text { font-size: 13px; color: var(--ink); line-height: 1.7; }
+
+  .check-limit-note { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 16px; }
+
+  /* 同意チェックボックス */
+  .consent-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+    font-size: 13px; color: var(--ink2); line-height: 1.7;
+  }
+  .consent-item:last-child { border-bottom: none; }
+  .consent-item input[type="checkbox"] { margin-top: 3px; accent-color: var(--green); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+
+  .user-memo { margin-top: 16px; }
+
+  .submit-btn {
+    width: 100%; background: var(--green2); border: none; border-radius: 8px;
+    padding: 14px; color: var(--white); font-family: 'Noto Serif JP', serif;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.06em;
+    cursor: pointer; transition: background 0.2s; margin-top: 16px;
+  }
+  .submit-btn:hover { background: var(--green); }
+  .submit-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+
+  /* 送信完了 */
+  .submit-done {
+    display: none; text-align: center; padding: 32px 24px;
+    background: rgba(44,122,46,0.06);
     border: 1px solid rgba(44,122,46,0.25);
-    color: var(--safe);
-    font-size: 12px; padding: 5px 12px;
-    border-radius: 20px; margin: 4px;
+    border-radius: 10px; margin-top: 16px;
   }
+  .submit-done.show { display: block; }
+  .submit-done h3 { font-family: 'Noto Serif JP', serif; font-size: 18px; color: var(--safe); margin-bottom: 8px; }
+  .submit-done p { font-size: 13px; color: var(--ink2); line-height: 1.8; }
 
-  /* Radar */
-  #radarWrap { text-align: center; }
-  #radarWrap img { max-width: 100%; border-radius: 8px; }
+  .positive-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(44,122,46,0.08); border: 1px solid rgba(44,122,46,0.25); color: var(--safe); font-size: 12px; padding: 5px 12px; border-radius: 20px; margin: 4px; }
 
-  /* Scale legend */
   .scale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .scale-item {
-    background: var(--bg); border: 1px solid var(--line);
-    border-radius: 6px; padding: 10px 12px;
-    font-size: 11px; line-height: 1.5; color: var(--ink2);
-  }
+  .scale-item { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-size: 11px; line-height: 1.5; color: var(--ink2); }
   .scale-num { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
 
-  /* Notice */
-  .notice {
-    font-size: 11px; line-height: 1.8; color: var(--muted);
-    padding: 14px 18px;
-    background: var(--white); border: 1px solid var(--line);
-    border-radius: 8px; margin-bottom: 14px;
-  }
+  .notice { font-size: 11px; line-height: 1.8; color: var(--muted); padding: 14px 18px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 14px; }
 
-  /* Footer */
-  footer {
-    border-top: 1px solid var(--line);
-    padding: 32px 24px 48px;
-    text-align: center;
-    font-size: 12px; color: var(--muted);
-    margin-top: 48px;
-  }
-  .footer-logo {
-    font-family: 'Noto Serif JP', serif;
-    font-size: 15px; font-weight: 600;
-    color: var(--ink); margin-bottom: 8px;
-  }
+  footer { border-top: 1px solid var(--line); padding: 32px 24px 48px; text-align: center; font-size: 12px; color: var(--muted); margin-top: 48px; }
+  .footer-logo { font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
   footer a { color: var(--green); text-decoration: none; }
 
   @media (max-width: 600px) {
@@ -341,10 +212,17 @@
     .hero-box { padding: 18px 20px; }
     .scale-grid { grid-template-columns: repeat(2, 1fr); }
     .report-section-body { padding: 14px 16px; }
+    .inquiry-body { padding: 16px; }
   }
 </style>
 </head>
 <body>
+
+<!-- ── ここにGoogle Apps ScriptのURLを貼り付ける ── -->
+<script>
+  // ★ デプロイ後にここを更新してください
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyHaB-KzNRqPlcCim7JVNK7xZaLOENf4_TylAXNgxcQKCSX3yrxpbZk5JAteRLYz4Ek/exec";
+</script>
 
 <header>
   <div class="logo">
@@ -370,11 +248,13 @@
 
   <!-- Input -->
   <div style="margin-bottom:40px">
+    <div class="section-label">企業名</div>
+    <input type="text" id="companyNameInput" placeholder="例：ライフイズテック株式会社" style="margin-bottom:16px">
+
     <div class="section-label">求人票を入力</div>
     <input type="text" id="urlInput" placeholder="求人票のURL（https://...）">
     <div class="divider-or">または</div>
-    <textarea id="textInput" rows="6"
-      placeholder="求人票のテキストをそのまま貼り付けてください&#10;※URLでの取得に失敗する場合はこちらをお使いください"></textarea>
+    <textarea id="textInput" rows="5" placeholder="求人票のテキストをそのまま貼り付けてください"></textarea>
 
     <div style="margin-top:20px">
       <div class="section-label">分析モード</div>
@@ -411,7 +291,6 @@
     <div class="report-title">JobMirror 分析レポート</div>
     <div class="report-sub" id="reportSub"></div>
 
-    <!-- Risk -->
     <div class="risk-box" id="riskBox">
       <div class="risk-bar" id="riskBar"></div>
       <div>
@@ -420,37 +299,21 @@
       </div>
     </div>
 
-    <!-- Cat scores -->
     <div class="report-section">
       <div class="report-section-header">📊 カテゴリ別スコア</div>
       <div class="report-section-body" id="catScores"></div>
     </div>
 
-    <!-- Concerns -->
     <div class="report-section">
       <div class="report-section-header">⚠️ 主な懸念点</div>
       <div class="report-section-body" id="concerns"></div>
     </div>
 
-    <!-- Positives -->
     <div class="report-section" id="positiveSection" style="display:none">
       <div class="report-section-header">✅ ポジティブシグナル</div>
       <div class="report-section-body" id="positives"></div>
     </div>
 
-    <!-- Radar -->
-    <div class="report-section" id="radarSection" style="display:none">
-      <div class="report-section-header">🕸 レーダーチャート</div>
-      <div class="report-section-body"><div id="radarWrap"></div></div>
-    </div>
-
-    <!-- Evidence -->
-    <div class="report-section" id="evidenceSection" style="display:none">
-      <div class="report-section-header">🔍 根拠（求人票からの抜粋）</div>
-      <div class="report-section-body" id="evidence"></div>
-    </div>
-
-    <!-- Scale -->
     <div class="report-section">
       <div class="report-section-header">📖 スコアの見方</div>
       <div class="report-section-body">
@@ -466,9 +329,64 @@
     </div>
 
     <div class="notice">
-      ⚠️ 0点＝安全ではなく「該当する懸念が検出されなかった」の意味です。情報が不足しているカテゴリは「測定不能」と表示されます。本分析は提供された求人情報に基づく自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終的な判断はご自身の責任とご判断にてお願いいたします。
+      ⚠️ 0点＝安全ではなく「該当する懸念が検出されなかった」の意味です。本分析は自動解析であり企業の実態を保証するものではありません。最終的な判断はご自身の責任にてお願いいたします。
     </div>
-  </div>
+
+    <!-- ── 問い合わせ申請セクション ── -->
+    <div class="inquiry-section" id="inquirySection" style="display:none">
+      <div class="inquiry-header">
+        <div>
+          <div class="inquiry-header-text">💬 ILORAに企業への問い合わせを依頼する</div>
+          <div class="inquiry-header-sub">確認したい懸念点を選んでください（最大3点）。ILORAが企業に代わりに聞きます。</div>
+        </div>
+      </div>
+      <div class="inquiry-body">
+
+        <!-- 懸念点チェックボックス -->
+        <div class="section-label">確認したい点を選ぶ</div>
+        <p class="check-limit-note">最大3つまで選択できます</p>
+        <div id="questionChecks"></div>
+
+        <!-- 同意事項 -->
+        <div style="margin-top:24px">
+          <div class="section-label">確認事項</div>
+          <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-top:8px">
+            <div class="consent-item">
+              <input type="checkbox" id="consent1">
+              <label for="consent1">年齢レンジ・経験年数・直近職種・ILORAスコアの匿名プロフィールが企業に開示されることに同意します。（氏名・現職会社名・学歴は一切開示しません）</label>
+            </div>
+            <div class="consent-item">
+              <input type="checkbox" id="consent2">
+              <label for="consent2">企業から回答が届いた場合、7日以内に「進める／やめる」をお伝えします。</label>
+            </div>
+            <div class="consent-item">
+              <input type="checkbox" id="consent3">
+              <label for="consent3">費用はすべて企業負担です。私への費用請求は一切ありません。</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ユーザーメモ -->
+        <div class="user-memo">
+          <div class="section-label">メモ（任意）</div>
+          <textarea id="userMemo" rows="3" placeholder="ILORAへの補足・特に気になっていることなどがあれば記入してください"></textarea>
+        </div>
+
+        <button class="submit-btn" id="submitBtn" onclick="submitInquiry()" disabled>
+          ILORAに問い合わせを依頼する
+        </button>
+      </div>
+    </div>
+
+    <!-- 送信完了 -->
+    <div class="submit-done" id="submitDone">
+      <h3>✅ 申請を受け付けました</h3>
+      <p>ILORA事務局（大下）が内容を確認し、企業に問い合わせを送ります。<br>
+         回答が届き次第、このページまたはメールでお知らせします。<br>
+         通常3〜7営業日程度かかります。</p>
+    </div>
+
+  </div><!-- /#result -->
 
 </div><!-- /.container -->
 
@@ -479,20 +397,18 @@
 </footer>
 
 <script>
-let currentMode = 'standard';
+let currentMode    = 'standard';
 let currentPersona = 'standard';
+let lastResult     = null;  // 分析結果を保持
 
 function setMode(btn) {
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentMode = btn.dataset.mode;
+  btn.classList.add('active'); currentMode = btn.dataset.mode;
 }
 function setPersona(btn) {
   document.querySelectorAll('[data-persona]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentPersona = btn.dataset.persona;
+  btn.classList.add('active'); currentPersona = btn.dataset.persona;
 }
-
 function scoreColor(s) {
   return ['#C8C5BE','#4CAF50','#7CB342','#B87A1A','#D4641A','#B5342A'][Math.min(s,5)];
 }
@@ -503,57 +419,53 @@ function riskClass(label) {
 }
 
 async function analyze() {
-  const url  = document.getElementById('urlInput').value.trim();
-  const text = document.getElementById('textInput').value.trim();
+  const company = document.getElementById('companyNameInput').value.trim();
+  const url     = document.getElementById('urlInput').value.trim();
+  const text    = document.getElementById('textInput').value.trim();
   if (!url && !text) { alert('URLまたは求人票テキストを入力してください'); return; }
 
   document.getElementById('result').classList.remove('show');
   document.getElementById('loading').classList.add('show');
   document.querySelector('.analyze-btn').disabled = true;
-  ['positiveSection','radarSection','evidenceSection'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-  });
+  document.getElementById('positiveSection').style.display = 'none';
+  document.getElementById('inquirySection').style.display  = 'none';
+  document.getElementById('submitDone').classList.remove('show');
 
   try {
-    // Phase 1.5 エンドポイント優先
     const ir = await fetch('/ilora/concerns', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: url||null, text: text||null, persona: currentPersona, max_questions: 5 }),
     });
-    if (ir.ok) { renderIlora(await ir.json()); return; }
+    if (ir.ok) { renderIlora(await ir.json(), company, url); return; }
 
-    // fallback
     const r = await fetch('/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: url||null, text: text||null, mode: currentMode }),
     });
     if (!r.ok) throw new Error((await r.json()).detail || '分析に失敗しました');
-    renderLegacy(await r.json());
+    renderLegacy(await r.json(), company, url);
 
-  } catch(e) {
-    alert('エラー: ' + e.message);
-  } finally {
+  } catch(e) { alert('エラー: ' + e.message); }
+  finally {
     document.getElementById('loading').classList.remove('show');
     document.querySelector('.analyze-btn').disabled = false;
   }
 }
 
-function renderIlora(d) {
-  const rc = riskClass(d.risk_level);
-  document.getElementById('reportSub').textContent = `ペルソナ: ${d.persona === 'lifecycle' ? 'ライフステージ重視' : '標準'}`;
-  document.getElementById('riskBar').className = `risk-bar ${rc}`;
-  document.getElementById('riskBox').className = `risk-box ${rc}`;
-  document.getElementById('riskLabel').textContent = d.risk_level;
-  document.getElementById('riskNote').textContent = `総合スコア ${d.total_score} / 35`;
+function renderIlora(d, company, url) {
+  lastResult = { ...d, company_name: company, job_url: url };
 
-  // カテゴリスコア（concerns から）
-  const catEl = document.getElementById('catScores');
-  catEl.innerHTML = (d.concerns||[]).map(c => {
+  const rc = riskClass(d.risk_level);
+  document.getElementById('reportSub').textContent = `分析対象：${company || '（企業名未入力）'}`;
+  document.getElementById('riskBar').className  = `risk-bar ${rc}`;
+  document.getElementById('riskBox').className  = `risk-box ${rc}`;
+  document.getElementById('riskLabel').textContent    = d.risk_level;
+  document.getElementById('riskNote').textContent     = `総合スコア ${d.total_score} / 35`;
+
+  // カテゴリスコア
+  document.getElementById('catScores').innerHTML = (d.concerns||[]).map(c => {
     const w = (c.score/5*100).toFixed(0);
-    return `
-    <div class="cat-row">
+    return `<div class="cat-row">
       <span class="cat-name">${c.category}</span>
       <div class="cat-bar-wrap"><div class="cat-bar" style="width:${w}%;background:${scoreColor(c.score)}"></div></div>
       <span class="cat-num" style="color:${scoreColor(c.score)}">${c.score}</span>
@@ -564,14 +476,10 @@ function renderIlora(d) {
   const concernEl = document.getElementById('concerns');
   if (d.concerns && d.concerns.length > 0) {
     concernEl.innerHTML = d.concerns.map(c => {
-      const cls = c.score >= 4 ? 'high' : c.score <= 1 ? 'low' : '';
+      const cls = c.score >= 4 ? 'high' : '';
       const ev = c.evidence && c.evidence[0] ? c.evidence[0].replace(/<[^>]+>/g,'') : '';
-      return `
-      <div class="concern-item ${cls}">
-        <div class="concern-cat">
-          ${c.category}
-          <span class="score-badge">スコア ${c.score}</span>
-        </div>
+      return `<div class="concern-item ${cls}">
+        <div class="concern-cat">${c.category} <span class="score-badge">スコア ${c.score}</span></div>
         <div class="concern-text">${c.summary}</div>
         ${ev ? `<div class="concern-evidence">${ev}</div>` : ''}
       </div>`;
@@ -587,67 +495,141 @@ function renderIlora(d) {
       d.positive_signals.map(s => `<span class="positive-pill">✓ ${s}</span>`).join('');
   }
 
+  // 問い合わせセクション（質問が1件以上あれば表示）
+  if (d.questions && d.questions.length > 0) {
+    buildInquirySection(d.questions);
+    document.getElementById('inquirySection').style.display = '';
+  }
+
   document.getElementById('result').classList.add('show');
   document.getElementById('result').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-function renderLegacy(d) {
-  const rc = riskClass(d.label);
-  document.getElementById('reportSub').textContent = `モード: ${d.mode || '標準'}`;
-  document.getElementById('riskBar').className = `risk-bar ${rc}`;
-  document.getElementById('riskBox').className = `risk-box ${rc}`;
-  document.getElementById('riskLabel').textContent = d.label;
-  document.getElementById('riskNote').textContent = `総合スコア ${d.total}`;
+function renderLegacy(d, company, url) {
+  lastResult = { concerns: [], questions: [], risk_level: d.label, total_score: d.total, company_name: company, job_url: url, persona: currentPersona };
 
-  // カテゴリスコア
+  const rc = riskClass(d.label);
+  document.getElementById('reportSub').textContent = `分析対象：${company || '（企業名未入力）'}`;
+  document.getElementById('riskBar').className  = `risk-bar ${rc}`;
+  document.getElementById('riskBox').className  = `risk-box ${rc}`;
+  document.getElementById('riskLabel').textContent = d.label;
+  document.getElementById('riskNote').textContent  = `総合スコア ${d.total}`;
+
   const cats = d.category_scores || {};
   const measured = d.measured_flags || {};
   document.getElementById('catScores').innerHTML = Object.entries(cats).map(([cat, score]) => {
     const w = (score/5*100).toFixed(0);
-    const m = measured[cat];
-    return `
-    <div class="cat-row">
+    return `<div class="cat-row">
       <span class="cat-name">${cat}</span>
       <div class="cat-bar-wrap"><div class="cat-bar" style="width:${w}%;background:${scoreColor(score)}"></div></div>
       <span class="cat-num" style="color:${scoreColor(score)}">${score}</span>
-      ${!m ? '<span class="cat-unmeasured">測定不能</span>' : ''}
+      ${!measured[cat] ? '<span style="font-size:11px;color:var(--muted)">測定不能</span>' : ''}
     </div>`;
   }).join('');
 
-  // 懸念点
   const recs = d.recommendations || [];
   document.getElementById('concerns').innerHTML = recs.length > 0
-    ? recs.map(r => `
-      <div class="concern-item">
-        <div class="concern-cat">${r.category}</div>
-        <div class="concern-text">${r.suggestion}</div>
-      </div>`).join('')
+    ? recs.map(r => `<div class="concern-item"><div class="concern-cat">${r.category}</div><div class="concern-text">${r.suggestion}</div></div>`).join('')
     : '<p style="color:var(--muted);font-size:13px">懸念点は検出されませんでした</p>';
-
-  // レーダー
-  if (d.chart_png_base64) {
-    document.getElementById('radarSection').style.display = '';
-    document.getElementById('radarWrap').innerHTML =
-      `<img src="data:image/png;base64,${d.chart_png_base64}" alt="radar">`;
-  }
-
-  // エビデンス
-  const ev = d.evidence || [];
-  if (ev.length > 0) {
-    document.getElementById('evidenceSection').style.display = '';
-    document.getElementById('evidence').innerHTML = ev.map(e => `
-      <div class="concern-item" style="border-left-color:var(--muted)">
-        <div class="concern-cat">${e.category}</div>
-        <div class="concern-evidence" style="margin-top:0">${e.snippet}</div>
-      </div>`).join('');
-  }
 
   document.getElementById('result').classList.add('show');
   document.getElementById('result').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
+// 問い合わせ申請セクションを構築
+function buildInquirySection(questions) {
+  const container = document.getElementById('questionChecks');
+  container.innerHTML = questions.map((q, i) => `
+    <div class="concern-check" id="qcard-${i}" onclick="toggleCheck(${i})">
+      <input type="checkbox" id="qcheck-${i}" ${q.selected ? 'checked' : ''} onchange="updateSubmitBtn()">
+      <div>
+        <div class="concern-check-cat">${q.category}</div>
+        <div class="concern-check-text">${q.question}</div>
+      </div>
+    </div>`).join('');
+
+  // デフォルト選択状態を反映
+  questions.forEach((q, i) => {
+    if (q.selected) document.getElementById('qcard-'+i).classList.add('selected');
+  });
+  updateSubmitBtn();
+}
+
+function toggleCheck(i) {
+  const cb   = document.getElementById('qcheck-'+i);
+  const card = document.getElementById('qcard-'+i);
+  const checked = document.querySelectorAll('#questionChecks input[type="checkbox"]:checked').length;
+
+  if (!cb.checked && checked >= 3) return; // 3件上限
+  cb.checked = !cb.checked;
+  card.classList.toggle('selected', cb.checked);
+  updateSubmitBtn();
+}
+
+function updateSubmitBtn() {
+  const checkedCount = document.querySelectorAll('#questionChecks input:checked').length;
+  const consented = ['consent1','consent2','consent3'].every(id => document.getElementById(id).checked);
+  document.getElementById('submitBtn').disabled = !(checkedCount > 0 && consented);
+}
+
+['consent1','consent2','consent3'].forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById(id)?.addEventListener('change', updateSubmitBtn);
+  });
+});
+
+async function submitInquiry() {
+  if (!lastResult) return;
+
+  const selectedQuestions = [];
+  document.querySelectorAll('#questionChecks input:checked').forEach(cb => {
+    const idx = parseInt(cb.id.replace('qcheck-',''));
+    if (lastResult.questions && lastResult.questions[idx]) {
+      selectedQuestions.push(lastResult.questions[idx]);
+    }
+  });
+
+  const payload = {
+    company_name:       lastResult.company_name || '',
+    job_url:            lastResult.job_url || '',
+    persona:            lastResult.persona || currentPersona,
+    risk_level:         lastResult.risk_level || '',
+    selected_questions: selectedQuestions,
+    anonymous_profile:  lastResult.anonymous_profile || {},
+    user_memo:          document.getElementById('userMemo').value.trim(),
+  };
+
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = '送信中…';
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors', // GASのCORS制限を回避
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    // no-corsではレスポンスが読めないが送信は成功
+    document.getElementById('inquirySection').style.display = 'none';
+    document.getElementById('submitDone').classList.add('show');
+    document.getElementById('submitDone').scrollIntoView({ behavior:'smooth' });
+  } catch(e) {
+    alert('送信に失敗しました。もう一度お試しください。');
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = 'ILORAに問い合わせを依頼する';
+  }
+}
+
 document.getElementById('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') analyze();
+});
+
+// 同意チェックのイベント（DOMロード後に設定）
+document.addEventListener('DOMContentLoaded', () => {
+  ['consent1','consent2','consent3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateSubmitBtn);
+  });
 });
 </script>
 </body>
