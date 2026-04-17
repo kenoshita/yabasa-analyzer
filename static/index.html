@@ -1,85 +1,654 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>求人票ヤバさ診断</title>
-  <link rel="stylesheet" href="/ui/styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobMirror チェッカー | ILORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #F5F3EE;
+    --bg2:     #EDEAE3;
+    --white:   #FFFFFF;
+    --ink:     #1F2421;
+    --ink2:    #3D4440;
+    --muted:   #8A8F8C;
+    --line:    #E0DDD6;
+    --green:   #3A6B3C;
+    --green2:  #2C5F2D;
+    --warn:    #B87A1A;
+    --danger:  #B5342A;
+    --safe:    #2C7A2E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  /* Header */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-ilora {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.06em;
+  }
+  .logo-sep { width: 1px; height: 16px; background: var(--line); }
+  .logo-product { font-size: 13px; color: var(--muted); }
+  .header-tag {
+    font-size: 11px;
+    color: var(--green);
+    border: 1px solid rgba(58,107,60,0.3);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+  }
+
+  /* Container */
+  .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero { padding: 56px 0 40px; text-align: center; }
+  .hero-label {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .hero h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: clamp(24px, 3.5vw, 34px);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .hero-box {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 32px;
+  }
+  .hero-box p { font-size: 14px; color: var(--ink2); line-height: 1.9; }
+  .hero-box .sub { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 4px; height: 12px;
+    background: var(--green);
+    border-radius: 2px;
+  }
+
+  /* Inputs */
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--muted); font-size: 13px; }
+  input[type="text"]:focus, textarea:focus { border-color: var(--green); }
+
+  .divider-or {
+    display: flex; align-items: center; gap: 12px;
+    margin: 14px 0;
+    color: var(--muted); font-size: 12px;
+  }
+  .divider-or::before, .divider-or::after {
+    content: ''; flex: 1; height: 1px; background: var(--line);
+  }
+
+  /* Option buttons */
+  .option-row { display: flex; gap: 8px; }
+  .opt-btn {
+    flex: 1;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 8px;
+    color: var(--muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .opt-btn:hover { border-color: var(--green); color: var(--green); }
+  .opt-btn.active {
+    background: rgba(58,107,60,0.07);
+    border-color: var(--green);
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  /* Analyze button */
+  .analyze-btn {
+    width: 100%;
+    background: var(--green2);
+    border: none; border-radius: 8px;
+    padding: 15px;
+    color: var(--white);
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 16px;
+  }
+  .analyze-btn:hover { background: var(--green); }
+  .analyze-btn:active { transform: scale(0.99); }
+  .analyze-btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 48px; }
+  .loading.show { display: block; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--line);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result */
+  #result { display: none; }
+  #result.show { display: block; }
+
+  .report-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 22px; font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+    padding: 40px 0 6px;
+  }
+  .report-sub { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+
+  /* Risk box */
+  .risk-box {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .risk-bar { width: 6px; align-self: stretch; border-radius: 4px; flex-shrink: 0; }
+  .risk-bar.low  { background: var(--safe); }
+  .risk-bar.mid  { background: var(--warn); }
+  .risk-bar.high { background: var(--danger); }
+  .risk-label {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px; font-weight: 700;
+  }
+  .low  .risk-label { color: var(--safe); }
+  .mid  .risk-label { color: var(--warn); }
+  .high .risk-label { color: var(--danger); }
+  .risk-score-note { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* Report section */
+  .report-section {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .report-section-header {
+    padding: 13px 22px;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--green); text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(58,107,60,0.03);
+    font-weight: 500;
+  }
+  .report-section-body { padding: 18px 22px; }
+
+  /* Category score bars */
+  .cat-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-name { font-size: 13px; min-width: 130px; color: var(--ink2); }
+  .cat-bar-wrap { flex: 1; height: 5px; background: var(--bg2); border-radius: 3px; }
+  .cat-bar { height: 100%; border-radius: 3px; transition: width 0.7s ease; }
+  .cat-num { font-size: 13px; font-weight: 600; min-width: 20px; text-align: right; }
+  .cat-unmeasured { font-size: 11px; color: var(--muted); }
+
+  /* Concern items */
+  .concern-item {
+    border-left: 3px solid var(--warn);
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    background: rgba(184,122,26,0.04);
+    border-radius: 0 6px 6px 0;
+  }
+  .concern-item:last-child { margin-bottom: 0; }
+  .concern-item.high { border-left-color: var(--danger); background: rgba(181,52,42,0.04); }
+  .concern-item.low  { border-left-color: var(--safe);   background: rgba(44,122,46,0.04); }
+  .concern-cat {
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 5px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .score-badge {
+    background: var(--bg2); color: var(--ink2);
+    border-radius: 10px; padding: 1px 8px;
+    font-size: 10px; font-weight: 600;
+  }
+  .concern-text { font-size: 13px; line-height: 1.8; color: var(--ink); }
+  .concern-evidence {
+    margin-top: 8px; font-size: 11px; color: var(--muted);
+    line-height: 1.7; padding: 8px 10px;
+    background: var(--bg); border-radius: 4px;
+  }
+
+  /* Positive pills */
+  .positive-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(44,122,46,0.08);
+    border: 1px solid rgba(44,122,46,0.25);
+    color: var(--safe);
+    font-size: 12px; padding: 5px 12px;
+    border-radius: 20px; margin: 4px;
+  }
+
+  /* Radar */
+  #radarWrap { text-align: center; }
+  #radarWrap img { max-width: 100%; border-radius: 8px; }
+
+  /* Scale legend */
+  .scale-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .scale-item {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 10px 12px;
+    font-size: 11px; line-height: 1.5; color: var(--ink2);
+  }
+  .scale-num { font-weight: 700; font-size: 16px; margin-bottom: 2px; }
+
+  /* Notice */
+  .notice {
+    font-size: 11px; line-height: 1.8; color: var(--muted);
+    padding: 14px 18px;
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 14px;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 32px 24px 48px;
+    text-align: center;
+    font-size: 12px; color: var(--muted);
+    margin-top: 48px;
+  }
+  .footer-logo {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px; font-weight: 600;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  footer a { color: var(--green); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    header { padding: 12px 20px; }
+    .container { padding: 0 16px; }
+    .hero { padding: 36px 0 24px; }
+    .hero-box { padding: 18px 20px; }
+    .scale-grid { grid-template-columns: repeat(2, 1fr); }
+    .report-section-body { padding: 14px 16px; }
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>求人票ヤバさ診断</h1>
-    <div class="version">v1.6.3</div>
-  </header>
 
-  <main>
-    <section class="input-card">
-      <label>URL または 本文（どちらか）</label>
-      <input id="url" type="url" placeholder="https://example.com/job">
-      <textarea id="text" rows="8" placeholder="ここに求人本文を貼り付け"></textarea>
+<header>
+  <div class="logo">
+    <span class="logo-ilora">ILORA</span>
+    <div class="logo-sep"></div>
+    <span class="logo-product">JobMirror チェッカー</span>
+  </div>
+  <span class="header-tag">Phase 1.5</span>
+</header>
 
-      <div class="row">
-        <label>モード</label>
-        <select id="mode">
-          <option value="standard">標準</option>
-          <option value="strict">厳しめ</option>
-          <option value="lenient">ゆるめ</option>
-        </select>
-        <span class="hint">※ URLは読み込み失敗もあるため、<b>本文コピペ推奨</b></span>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <span class="hero-label">JobMirror Checker</span>
+    <h1>求人票の実態を、先に確認する。</h1>
+    <div class="hero-box">
+      <p>気になる企業の求人票URLまたはテキストを入力すると、<br>
+         ILORAが7つの軸で構造的な懸念点を分析します。</p>
+      <p class="sub">聞きづらいことを、ILORAが企業に代わりに聞く。</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div style="margin-bottom:40px">
+    <div class="section-label">求人票を入力</div>
+    <input type="text" id="urlInput" placeholder="求人票のURL（https://...）">
+    <div class="divider-or">または</div>
+    <textarea id="textInput" rows="6"
+      placeholder="求人票のテキストをそのまま貼り付けてください&#10;※URLでの取得に失敗する場合はこちらをお使いください"></textarea>
+
+    <div style="margin-top:20px">
+      <div class="section-label">分析モード</div>
+      <div class="option-row">
+        <button class="opt-btn active" data-mode="standard" onclick="setMode(this)">標準</button>
+        <button class="opt-btn" data-mode="strict" onclick="setMode(this)">厳しめ</button>
+        <button class="opt-btn" data-mode="lenient" onclick="setMode(this)">ゆるめ</button>
       </div>
+    </div>
 
-      <div class="row">
-        <button id="analyzeBtn">診断する</button>
-        <span id="status"></span>
+    <div style="margin-top:14px">
+      <div class="section-label">分析ペルソナ</div>
+      <div class="option-row">
+        <button class="opt-btn active" data-persona="standard" onclick="setPersona(this)">
+          標準<br><span style="font-size:10px;color:var(--muted)">全ユーザー共通</span>
+        </button>
+        <button class="opt-btn" data-persona="lifecycle" onclick="setPersona(this)">
+          ライフステージ重視<br><span style="font-size:10px;color:var(--muted)">35歳以上・子持ち向け</span>
+        </button>
       </div>
+    </div>
 
-      <p class="legend">
-        スコアは各カテゴリ 0〜5（0=問題なし / 5=大いに問題あり）。情報不足で評価できない項目は <b>測定不能</b> と表示します。
-      </p>
-    </section>
+    <button class="analyze-btn" onclick="analyze()">求人票を分析する</button>
+  </div>
 
-    <section id="result" class="hidden">
-      <div class="score-banner">
-        <div class="total-score" id="totalScore">--</div>
-        <div class="total-label" id="totalLabel">-</div>
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--muted)">求人票を分析中です…</p>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+    <div class="report-title">JobMirror 分析レポート</div>
+    <div class="report-sub" id="reportSub"></div>
+
+    <!-- Risk -->
+    <div class="risk-box" id="riskBox">
+      <div class="risk-bar" id="riskBar"></div>
+      <div>
+        <div class="risk-label" id="riskLabel"></div>
+        <div class="risk-score-note" id="riskNote"></div>
       </div>
+    </div>
 
-      <div class="chart-block">
-        <img id="radar" alt="Radar Chart" />
-        <div class="scale">
-          <div class="scale-title">スコアの見方</div>
-          <ul id="scaleList"></ul>
+    <!-- Cat scores -->
+    <div class="report-section">
+      <div class="report-section-header">📊 カテゴリ別スコア</div>
+      <div class="report-section-body" id="catScores"></div>
+    </div>
+
+    <!-- Concerns -->
+    <div class="report-section">
+      <div class="report-section-header">⚠️ 主な懸念点</div>
+      <div class="report-section-body" id="concerns"></div>
+    </div>
+
+    <!-- Positives -->
+    <div class="report-section" id="positiveSection" style="display:none">
+      <div class="report-section-header">✅ ポジティブシグナル</div>
+      <div class="report-section-body" id="positives"></div>
+    </div>
+
+    <!-- Radar -->
+    <div class="report-section" id="radarSection" style="display:none">
+      <div class="report-section-header">🕸 レーダーチャート</div>
+      <div class="report-section-body"><div id="radarWrap"></div></div>
+    </div>
+
+    <!-- Evidence -->
+    <div class="report-section" id="evidenceSection" style="display:none">
+      <div class="report-section-header">🔍 根拠（求人票からの抜粋）</div>
+      <div class="report-section-body" id="evidence"></div>
+    </div>
+
+    <!-- Scale -->
+    <div class="report-section">
+      <div class="report-section-header">📖 スコアの見方</div>
+      <div class="report-section-body">
+        <div class="scale-grid">
+          <div class="scale-item"><div class="scale-num" style="color:var(--muted)">0</div>懸念が検出されなかった</div>
+          <div class="scale-item"><div class="scale-num" style="color:#4CAF50">1</div>軽微な懸念（やや曖昧）</div>
+          <div class="scale-item"><div class="scale-num" style="color:#7CB342">2</div>懸念あり（要注意の文言）</div>
+          <div class="scale-item"><div class="scale-num" style="color:var(--warn)">3</div>中程度（条件が不透明）</div>
+          <div class="scale-item"><div class="scale-num" style="color:#D4641A">4</div>高いリスク（過重労働の示唆）</div>
+          <div class="scale-item"><div class="scale-num" style="color:var(--danger)">5</div>非常に高い（強いサインが複数）</div>
         </div>
       </div>
+    </div>
 
-      <h3>カテゴリ別スコア</h3>
-      <table id="scoreTable">
-        <thead><tr><th>カテゴリ</th><th>スコア</th><th>測定</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="notice">
+      ⚠️ 0点＝安全ではなく「該当する懸念が検出されなかった」の意味です。情報が不足しているカテゴリは「測定不能」と表示されます。本分析は提供された求人情報に基づく自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終的な判断はご自身の責任とご判断にてお願いいたします。
+    </div>
+  </div>
 
-      <h3>根拠（抽出スニペット）</h3>
-      <div id="evidence"></div>
+</div><!-- /.container -->
 
-      <h3>主な懸念点</h3>
-      <ul id="recommendations"></ul>
+<footer>
+  <div class="footer-logo">ILORA</div>
+  <p>JobMirror チェッカーは <a href="https://ilora.jp">ILORA</a> の機能の一部です。</p>
+  <p style="margin-top:6px">株式会社Sketto &nbsp;｜&nbsp; 有料職業紹介事業</p>
+</footer>
 
-      <h3>上位理由</h3>
-      <ul id="reasons"></ul>
+<script>
+let currentMode = 'standard';
+let currentPersona = 'standard';
 
-      <div class="notice-box">
-        <p><b>⚠ 注意事項</b></p>
-        <p>0点＝安全 ではなく、「該当する懸念が検出されなかった」の意味です。</p>
-        <p>情報が不足しているカテゴリは <b>測定不能</b> と表示されます。</p>
-      </div>
+function setMode(btn) {
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+}
+function setPersona(btn) {
+  document.querySelectorAll('[data-persona]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPersona = btn.dataset.persona;
+}
 
-      <div class="disclaimer">
-        <p>本診断結果は、提供された求人情報に基づく自動解析であり、企業の実態・労働環境・法令遵守状況を保証するものではありません。最終的な判断は、ご自身の責任とご判断にて行ってください。</p>
-      </div>
-    </section>
+function scoreColor(s) {
+  return ['#C8C5BE','#4CAF50','#7CB342','#B87A1A','#D4641A','#B5342A'][Math.min(s,5)];
+}
+function riskClass(label) {
+  if (label.startsWith('高')) return 'high';
+  if (label.startsWith('中')) return 'mid';
+  return 'low';
+}
 
-    <div class="credit">働き方リテラシー研究所 – produced by <a href="https://x.com/careerplanplus" target="_blank">@careerplanplus</a></div>
-  </main>
+async function analyze() {
+  const url  = document.getElementById('urlInput').value.trim();
+  const text = document.getElementById('textInput').value.trim();
+  if (!url && !text) { alert('URLまたは求人票テキストを入力してください'); return; }
+
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('loading').classList.add('show');
+  document.querySelector('.analyze-btn').disabled = true;
+  ['positiveSection','radarSection','evidenceSection'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  try {
+    // Phase 1.5 エンドポイント優先
+    const ir = await fetch('/ilora/concerns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url||null, text: text||null, persona: currentPersona, max_questions: 5 }),
+    });
+    if (ir.ok) { renderIlora(await ir.json()); return; }
+
+    // fallback
+    const r = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url||null, text: text||null, mode: currentMode }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || '分析に失敗しました');
+    renderLegacy(await r.json());
+
+  } catch(e) {
+    alert('エラー: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.querySelector('.analyze-btn').disabled = false;
+  }
+}
+
+function renderIlora(d) {
+  const rc = riskClass(d.risk_level);
+  document.getElementById('reportSub').textContent = `ペルソナ: ${d.persona === 'lifecycle' ? 'ライフステージ重視' : '標準'}`;
+  document.getElementById('riskBar').className = `risk-bar ${rc}`;
+  document.getElementById('riskBox').className = `risk-box ${rc}`;
+  document.getElementById('riskLabel').textContent = d.risk_level;
+  document.getElementById('riskNote').textContent = `総合スコア ${d.total_score} / 35`;
+
+  // カテゴリスコア（concerns から）
+  const catEl = document.getElementById('catScores');
+  catEl.innerHTML = (d.concerns||[]).map(c => {
+    const w = (c.score/5*100).toFixed(0);
+    return `
+    <div class="cat-row">
+      <span class="cat-name">${c.category}</span>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${w}%;background:${scoreColor(c.score)}"></div></div>
+      <span class="cat-num" style="color:${scoreColor(c.score)}">${c.score}</span>
+    </div>`;
+  }).join('') || '<p style="color:var(--muted);font-size:13px">データなし</p>';
+
+  // 懸念点
+  const concernEl = document.getElementById('concerns');
+  if (d.concerns && d.concerns.length > 0) {
+    concernEl.innerHTML = d.concerns.map(c => {
+      const cls = c.score >= 4 ? 'high' : c.score <= 1 ? 'low' : '';
+      const ev = c.evidence && c.evidence[0] ? c.evidence[0].replace(/<[^>]+>/g,'') : '';
+      return `
+      <div class="concern-item ${cls}">
+        <div class="concern-cat">
+          ${c.category}
+          <span class="score-badge">スコア ${c.score}</span>
+        </div>
+        <div class="concern-text">${c.summary}</div>
+        ${ev ? `<div class="concern-evidence">${ev}</div>` : ''}
+      </div>`;
+    }).join('');
+  } else {
+    concernEl.innerHTML = '<p style="color:var(--muted);font-size:13px">懸念点は検出されませんでした</p>';
+  }
+
+  // ポジティブ
+  if (d.positive_signals && d.positive_signals.length > 0) {
+    document.getElementById('positiveSection').style.display = '';
+    document.getElementById('positives').innerHTML =
+      d.positive_signals.map(s => `<span class="positive-pill">✓ ${s}</span>`).join('');
+  }
+
+  document.getElementById('result').classList.add('show');
+  document.getElementById('result').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderLegacy(d) {
+  const rc = riskClass(d.label);
+  document.getElementById('reportSub').textContent = `モード: ${d.mode || '標準'}`;
+  document.getElementById('riskBar').className = `risk-bar ${rc}`;
+  document.getElementById('riskBox').className = `risk-box ${rc}`;
+  document.getElementById('riskLabel').textContent = d.label;
+  document.getElementById('riskNote').textContent = `総合スコア ${d.total}`;
+
+  // カテゴリスコア
+  const cats = d.category_scores || {};
+  const measured = d.measured_flags || {};
+  document.getElementById('catScores').innerHTML = Object.entries(cats).map(([cat, score]) => {
+    const w = (score/5*100).toFixed(0);
+    const m = measured[cat];
+    return `
+    <div class="cat-row">
+      <span class="cat-name">${cat}</span>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${w}%;background:${scoreColor(score)}"></div></div>
+      <span class="cat-num" style="color:${scoreColor(score)}">${score}</span>
+      ${!m ? '<span class="cat-unmeasured">測定不能</span>' : ''}
+    </div>`;
+  }).join('');
+
+  // 懸念点
+  const recs = d.recommendations || [];
+  document.getElementById('concerns').innerHTML = recs.length > 0
+    ? recs.map(r => `
+      <div class="concern-item">
+        <div class="concern-cat">${r.category}</div>
+        <div class="concern-text">${r.suggestion}</div>
+      </div>`).join('')
+    : '<p style="color:var(--muted);font-size:13px">懸念点は検出されませんでした</p>';
+
+  // レーダー
+  if (d.chart_png_base64) {
+    document.getElementById('radarSection').style.display = '';
+    document.getElementById('radarWrap').innerHTML =
+      `<img src="data:image/png;base64,${d.chart_png_base64}" alt="radar">`;
+  }
+
+  // エビデンス
+  const ev = d.evidence || [];
+  if (ev.length > 0) {
+    document.getElementById('evidenceSection').style.display = '';
+    document.getElementById('evidence').innerHTML = ev.map(e => `
+      <div class="concern-item" style="border-left-color:var(--muted)">
+        <div class="concern-cat">${e.category}</div>
+        <div class="concern-evidence" style="margin-top:0">${e.snippet}</div>
+      </div>`).join('');
+  }
+
+  document.getElementById('result').classList.add('show');
+  document.getElementById('result').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') analyze();
+});
+</script>
 </body>
-<script src="/ui/app.js"></script>
 </html>
