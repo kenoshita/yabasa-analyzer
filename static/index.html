@@ -332,12 +332,12 @@
 
     <!-- ★ デュアルレーダーチャート -->
     <div class="report-section">
-      <div class="report-section-header">🕸 適合マップ — 企業リスク × あなたの優先度</div>
+      <div class="report-section-header">🕸 適合マップ — 企業リスク × あなたの耐性</div>
       <div class="report-section-body">
         <!-- ILORAデータ未接続バナー（データがある場合は非表示） -->
         <div class="ilora-connect-banner" id="iloraConnectBanner">
           <span style="font-size:18px">💡</span>
-          <p><strong>ILORAの現在地レポートと接続すると</strong>、緑の多角形（あなたの優先度）が表示されます。<br>
+          <p><strong>ILORAの現在地レポートと接続すると</strong>、緑の多角形（あなたの耐性）が表示されます。<br>
           現在は企業リスクのみ表示中。ILORAでセッションを完了してからこの画面を開いてください。</p>
         </div>
         <div class="radar-wrap">
@@ -350,7 +350,7 @@
           </div>
           <div class="legend-item" id="iloraLegendItem" style="display:none">
             <div class="legend-dot" style="background:rgba(44,95,45,0.7)"></div>
-            <span>あなたの優先度（高いほど重要）</span>
+            <span>あなたの耐性（高いほど許容できる）</span>
           </div>
         </div>
       </div>
@@ -591,7 +591,7 @@ function drawRadar(riskScores, userProfile) {
   if (userProfile) {
     const userScores = AXES.map(ax => userProfile[ax.ilora_key] || 0);
     datasets.push({
-      label: 'あなたの優先度',
+      label: 'あなたの耐性',
       data: userScores,
       backgroundColor: 'rgba(44,95,45,0.12)',
       borderColor:     'rgba(44,95,45,0.8)',
