@@ -294,3 +294,5 @@ def admin_data(payload: dict = Body(...)):
         "by_label": {"low": labels["低"], "mid": labels["中"], "high": labels["高"]},
         "daily": {"labels": days, "values": daily_values},
     }
+from ilora_endpoint import router as ilora_router
+app.include_router(ilora_router)
