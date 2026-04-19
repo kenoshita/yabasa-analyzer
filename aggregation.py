@@ -12,6 +12,14 @@ ILORA v4.8 で追加する集約ロジック。
   - 既存の rules.py, rules_ilora.py, rules_v48.py は変更しない
   - ILORA側との8軸レーダー表示(戦略C:2層構造)に対応
   - 「あなたの優先度」→「あなたの耐性」のラベル変更に追随
+
+変更履歴:
+  v4.8.0 (initial): 基本実装
+  v4.8.1: hard_limit_violations の年収検出ロジック強化
+          - 月給/月額/基本給からの年収換算(×12)に対応
+          - 時給からの年収換算(×2080)に対応
+          - 2桁年収表記にも対応
+          - 年収情報未記載時の警告も追加
 """
 
 import re
@@ -20,15 +28,6 @@ from typing import Optional
 
 # ------------------------------------------------------------------ #
 #  レーダー8軸のマッピング定義
-# ------------------------------------------------------------------ #
-#
-#  【戦略C:2層構造】
-#    UIレーダー(8軸) ←→ 内部分析カテゴリ(rules.py + v4.8)
-#
-#  「勤務地・募集人数」「求人票サイン(求人票デザイン)」「企業HPサイン(企業HPデザイン)」は
-#  レーダー表示上は「仕事内容・スキル」「社風・文化」「企業安定性」等に統合されるが、
-#  内部カテゴリ別スコア(画面下部のバー表示)では個別に表示可能。
-#
 # ------------------------------------------------------------------ #
 
 RADAR_AXIS_MAPPING = {
@@ -94,20 +93,6 @@ MAX_AXIS_SCORE = 5
 def aggregate_to_radar_axes(cat_scores: dict) -> dict:
     """
     内部カテゴリスコア(10カテゴリ)を レーダー8軸スコアに集約する。
-
-    Args:
-        cat_scores: 内部カテゴリ別スコア。例:
-            {"給与・待遇": 3, "勤務時間・休日": 2, "社風・福利厚生": 1, ...}
-
-    Returns:
-        dict: 8軸それぞれのスコア(0-5)。未測定軸は0として返す。
-        例:
-            {
-                "salary_compensation": 3.0,
-                "working_hours": 2.0,
-                "job_content_skills": 1.5,
-                ...
-            }
     """
     radar = {}
 
@@ -116,19 +101,13 @@ def aggregate_to_radar_axes(cat_scores: dict) -> dict:
         for cat, weight in mapping["weight"].items():
             score += cat_scores.get(cat, 0) * weight
 
-        # 0-5の範囲に丸める
         radar[axis_key] = round(min(MAX_AXIS_SCORE, max(0, score)), 1)
 
     return radar
 
 
 def get_radar_display_names() -> dict:
-    """
-    レーダー8軸の表示名マップを返す(フロントエンド用)。
-
-    Returns:
-        dict: { "salary_compensation": "給与・報酬", ... }
-    """
+    """レーダー8軸の表示名マップを返す(フロントエンド用)。"""
     return {
         key: mapping["display_name"]
         for key, mapping in RADAR_AXIS_MAPPING.items()
@@ -138,20 +117,8 @@ def get_radar_display_names() -> dict:
 # ------------------------------------------------------------------ #
 #  2. 赤ポリゴン × 緑ポリゴン の差分判定
 # ------------------------------------------------------------------ #
-#
-#  「あなたの耐性」ラベル:
-#    user_tolerance の score が高い = その軸のズレを吸収できる
-#    user_tolerance の score が低い = その軸のズレに弱い
-#
-#  判定ロジック:
-#    gap = company_risk - user_tolerance
-#    gap が正 = リスクが耐性を上回る(要注意領域)
-#    gap が負 = 耐性がリスクを吸収できる(安全領域)
-#
-# ------------------------------------------------------------------ #
 
 VERDICT_THRESHOLDS = [
-    # (下限, 上限, verdict, message)
     (-999, -1.0,  "safe",     "この軸はリスクがあっても吸収できる領域です"),
     (-1.0,  0.5,  "watch",    "ズレは小さく、許容範囲内の可能性"),
     ( 0.5,  2.0,  "warning",  "リスクが耐性を上回っています。確認を推奨"),
@@ -162,39 +129,12 @@ VERDICT_THRESHOLDS = [
 def compute_axis_matches(radar_scores: dict, user_tolerance: dict) -> dict:
     """
     赤ポリゴン(企業リスク) × 緑ポリゴン(ユーザー耐性) の軸ごとのマッチ判定。
-
-    Args:
-        radar_scores: aggregate_to_radar_axes() の戻り値(8軸スコア)
-        user_tolerance: ILORA側から渡される 8軸の ToleranceScore。
-            形式:
-            {
-                "salary_compensation": {"score": 2.0, "confidence": "high", ...},
-                "working_hours": {"score": 4.0, ...},
-                ...
-            }
-
-    Returns:
-        dict: 軸ごとの AxisMatchResult。
-            形式:
-            {
-                "salary_compensation": {
-                    "company_risk": 3.5,
-                    "user_tolerance": 2.0,
-                    "gap": 1.5,
-                    "verdict": "warning",
-                    "message": "リスクが耐性を上回っています...",
-                    "confidence": "high"
-                },
-                ...
-            }
     """
     matches = {}
 
     for axis_key, company_risk in radar_scores.items():
-        # ユーザー耐性データを取得(なければデフォルト3.0=中立)
         tolerance_data = user_tolerance.get(axis_key) or {}
 
-        # dictでもobjectでも受け取れるようにする
         if isinstance(tolerance_data, dict):
             user_score = float(tolerance_data.get("score", 3.0))
             confidence = tolerance_data.get("confidence", "medium")
@@ -204,7 +144,6 @@ def compute_axis_matches(radar_scores: dict, user_tolerance: dict) -> dict:
 
         gap = company_risk - user_score
 
-        # verdictとmessageの判定
         verdict = "watch"
         message = "判定不可"
         for lower, upper, v, m in VERDICT_THRESHOLDS:
@@ -226,8 +165,106 @@ def compute_axis_matches(radar_scores: dict, user_tolerance: dict) -> dict:
 
 
 # ------------------------------------------------------------------ #
-#  3. hard_limit違反チェック
+#  3. hard_limit違反チェック (v4.8.1で年収検出を強化)
 # ------------------------------------------------------------------ #
+
+def _estimate_annual_salaries(text: str) -> list[dict]:
+    """
+    求人票テキストから想定される年収候補を抽出して、年収換算で返す。
+
+    年収表記/月給表記/基本給表記/時給表記のすべてに対応。
+
+    Returns:
+        list[dict]: [{"annual": 240, "source": "月給20万→年収換算", "raw": "月給20万円"}, ...]
+    """
+    candidates = []
+
+    # --- 1. 年収表記(直接) ---
+    # 例: 「年収500万円」「年収500万〜800万」
+    for m in re.finditer(
+        r"年収\s*(\d{2,4})\s*万",
+        text
+    ):
+        val = int(m.group(1))
+        candidates.append({
+            "annual": val,
+            "source": "年収直接表記",
+            "raw": m.group(0),
+        })
+
+    # --- 2. 年収レンジ表記 ---
+    # 例: 「500万〜800万円」「300万円-1000万円」
+    for m in re.finditer(
+        r"(\d{3,4})\s*万\s*円?\s*[-〜~ー]\s*(\d{3,4})\s*万",
+        text
+    ):
+        lo = int(m.group(1))
+        hi = int(m.group(2))
+        candidates.append({
+            "annual": hi,
+            "source": "年収レンジ上限",
+            "raw": m.group(0),
+        })
+        candidates.append({
+            "annual": lo,
+            "source": "年収レンジ下限",
+            "raw": m.group(0),
+        })
+
+    # --- 3. 月給/月額/基本給表記 → 年収換算(×12) ---
+    # 例: 「月給20万円」「月額25万」「基本給18万円」
+    monthly_pattern = re.compile(
+        r"(月\s*給|月\s*額|基本\s*給|月\s*収)\s*[:：]?\s*(\d{1,3})\s*万",
+        re.IGNORECASE
+    )
+    for m in monthly_pattern.finditer(text):
+        monthly_man = int(m.group(2))
+        annual = monthly_man * 12
+        candidates.append({
+            "annual": annual,
+            "source": f"{m.group(1)}{monthly_man}万→年収換算(×12)",
+            "raw": m.group(0),
+        })
+
+    # --- 4. 月給「○○円」表記(万円表記なし) ---
+    # 例: 「月給200,000円」「基本給180,000円」
+    for m in re.finditer(
+        r"(月\s*給|月\s*額|基本\s*給|月\s*収)\s*[:：]?\s*([\d,]{6,9})\s*円",
+        text
+    ):
+        try:
+            monthly_yen = int(m.group(2).replace(",", ""))
+            annual_man = (monthly_yen * 12) // 10000
+            if annual_man >= 100:
+                candidates.append({
+                    "annual": annual_man,
+                    "source": f"{m.group(1)}{monthly_yen:,}円→年収換算",
+                    "raw": m.group(0),
+                })
+        except ValueError:
+            pass
+
+    # --- 5. 時給表記 → 年収換算(×2080:週40h × 52週) ---
+    # 例: 「時給1500円」「時給1,200円〜」
+    for m in re.finditer(
+        r"時\s*給\s*[:：]?\s*([\d,]{3,5})\s*円",
+        text
+    ):
+        try:
+            hourly = int(m.group(1).replace(",", ""))
+            annual_yen = hourly * 2080
+            annual_man = annual_yen // 10000
+            if annual_man >= 100:
+                candidates.append({
+                    "annual": annual_man,
+                    "source": f"時給{hourly:,}円→年収換算(×2080h)",
+                    "raw": m.group(0),
+                })
+        except ValueError:
+            pass
+
+    return candidates
+
 
 def check_hard_limit_violations(
     text: str,
@@ -236,29 +273,7 @@ def check_hard_limit_violations(
     """
     求人票テキストが hard_limits(絶対NG条件)に抵触するかチェック。
 
-    Args:
-        text: 求人票テキスト(preprocessed)
-        hard_limits: ILORA側から渡される hard_limits データ。
-            形式:
-            {
-                "income_floor": 500,  # 万円
-                "geography_exclusion": ["大阪", "福岡"],
-                "work_style_constraints": ["フルタイムのみの環境"],
-                "continuity_patterns": [...],
-                "relationship_exclusions": [...]
-            }
-
-    Returns:
-        list[dict]: 違反項目のリスト。空リストなら違反なし。
-            形式:
-            [
-                {
-                    "type": "income_floor",
-                    "message": "求人票の最高年収(400万円)が下限(500万円)を下回ります",
-                    "severity": "critical"
-                },
-                ...
-            ]
+    v4.8.1: 月給・基本給・時給表記からの年収換算に対応。
     """
     if not hard_limits:
         return []
@@ -268,27 +283,29 @@ def check_hard_limit_violations(
     # --- income_floor (R1: 年収下限) ---
     floor = hard_limits.get("income_floor")
     if floor:
-        salary_matches = re.findall(
-            r"(\d{3,4})\s*万\s*[円]?\s*[-〜~]\s*(\d{3,4})\s*万|"
-            r"年収\s*(\d{3,4})\s*万\s*[円]?\s*以上|"
-            r"(\d{3,4})\s*万\s*[円]?\s*スタート",
-            text
-        )
-        if salary_matches:
-            # 抽出したすべての数値から最大値を取る
-            all_values = []
-            for match in salary_matches:
-                for v in match:
-                    if v:
-                        all_values.append(int(v))
-            if all_values:
-                max_salary = max(all_values)
-                if max_salary < floor:
-                    violations.append({
-                        "type": "income_floor",
-                        "message": f"求人票の最高年収({max_salary}万円)が下限({floor}万円)を下回ります",
-                        "severity": "critical",
-                    })
+        salary_candidates = _estimate_annual_salaries(text)
+        if salary_candidates:
+            # 最も高い候補を採用(企業側の上限値で評価)
+            best = max(salary_candidates, key=lambda x: x["annual"])
+            max_annual = best["annual"]
+
+            if max_annual < floor:
+                violations.append({
+                    "type": "income_floor",
+                    "message": f"求人票の最高想定年収({max_annual}万円)が下限({floor}万円)を下回ります。根拠:{best['source']}",
+                    "severity": "critical",
+                    "detected_annual": max_annual,
+                    "required_floor": floor,
+                    "estimation_source": best["source"],
+                })
+        else:
+            # 年収情報そのものが見つからない場合
+            violations.append({
+                "type": "income_floor_unconfirmed",
+                "message": f"求人票に年収・月給などの給与情報が見つかりません。下限({floor}万円)を満たすか確認が必要です",
+                "severity": "warning",
+                "required_floor": floor,
+            })
 
     # --- geography_exclusion (R2: 地理制約) ---
     for geo in hard_limits.get("geography_exclusion", []) or []:
@@ -300,13 +317,10 @@ def check_hard_limit_violations(
             })
 
     # --- work_style_constraints (R3: 働き方制約) ---
-    # 求人票のテキスト中で、ユーザーが避けたい働き方を示すキーワードが見つかるかチェック
     for constraint in hard_limits.get("work_style_constraints", []) or []:
         if not constraint or not isinstance(constraint, str):
             continue
 
-        # 簡易マッチング:制約文中の重要キーワードを抽出してテキスト検索
-        # (v4.8では簡易実装、v5.0でより高度なマッチング)
         keywords = _extract_constraint_keywords(constraint)
         for kw in keywords:
             if kw and kw in text:
@@ -315,11 +329,9 @@ def check_hard_limit_violations(
                     "message": f"働き方制約「{constraint}」に関連する記載が見られます:「{kw}」",
                     "severity": "warning",
                 })
-                break  # 同じ制約で複数ヒットしないよう1件で打ち切り
+                break
 
     # --- relationship_exclusions (R5: 関係性制約) ---
-    # 求人票には上司・組織文化の明確な記述が少ないため、
-    # v4.8では簡易的に文化キーワードマッチのみ
     for exclusion in hard_limits.get("relationship_exclusions", []) or []:
         if not exclusion or not isinstance(exclusion, str):
             continue
@@ -340,10 +352,7 @@ def check_hard_limit_violations(
 def _extract_constraint_keywords(constraint: str) -> list[str]:
     """
     制約文から重要キーワードを抽出する簡易ヘルパー。
-
-    v4.8では単純なキーワード辞書ベース。v5.0ではセマンティック検索に置き換え予定。
     """
-    # 働き方・関係性系の定型キーワード
     keyword_patterns = [
         # 働き方
         "フルタイム", "残業", "休日出勤", "夜勤", "転勤", "出張",
@@ -368,14 +377,6 @@ def _extract_constraint_keywords(constraint: str) -> list[str]:
 def build_category_scores_for_display(cat_scores: dict) -> list[dict]:
     """
     カテゴリ別スコアをUI表示用に整形する。
-    レーダー8軸に集約されないカテゴリ(例:求人票デザイン、企業HPデザイン)も
-    画面下部のバー表示用に保持する。
-
-    Args:
-        cat_scores: 内部カテゴリスコア
-
-    Returns:
-        list[dict]: 表示順に並んだカテゴリスコアのリスト
     """
     from rules_v48 import DISPLAY_NAME_MAP_V48
 
